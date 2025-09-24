@@ -45,7 +45,9 @@ public struct SMVGallery: View {
                     .aspectRatio(contentMode: .fit)
                     .cornerRadius(12)
                     .clipped()
+                    #if !os(macOS)
                     .matchedTransitionSource(id: firstURL, in: galleryNamespace)
+                    #endif
                     .contentShape(Rectangle())
                     .onTapGesture {
                         selectedIndex = 0
@@ -68,7 +70,9 @@ public struct SMVGallery: View {
                                 .frame(width: thumbSize, height: thumbSize)
                                 .cornerRadius(8)
                                 .clipped()
+                                #if !os(macOS)
                                 .matchedTransitionSource(id: imageURL, in: galleryNamespace)
+                                #endif
                                 .contentShape(Rectangle())
                                 .overlay {
                                     if thumbIndex == displayImages.count - 1 && remainingCount > 0 {
@@ -86,13 +90,12 @@ public struct SMVGallery: View {
                                 .onTapGesture {
                                     selectedIndex = actualIndex
                                 }
-
                         }
                     }
                 }
             }
         }
-        .fullScreenCover(item: $selectedIndex) { index in
+        .conditionalFullScreen(item: $selectedIndex) { index in
             SMVImageModal(
                 urls: images,
                 startIndex: index,

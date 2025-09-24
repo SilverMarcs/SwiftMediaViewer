@@ -49,9 +49,11 @@ public struct SMVVideo: View {
             .onDisappear {
                 cleanupPlayer()
             }
-            .fullScreenCover(isPresented: $showModal) {
+            .conditionalFullScreen(isPresented: $showModal) {
                 VideoPlayer(player: player)
+                    #if !os(macOS)
                     .navigationTransition(.zoom(sourceID: videoURL, in: ns))
+                    #endif
                     .ignoresSafeArea()
             }
     }

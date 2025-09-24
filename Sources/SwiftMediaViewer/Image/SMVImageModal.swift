@@ -36,14 +36,14 @@ public struct SMVImageModal: View {
             HStack {
                 Button(action: previousImage) { Image(systemName: "chevron.left") }
                     .controlSize(.extraLarge)
-                    .buttonStyle(.glass)
+//                    .buttonStyle(.glass)
                     .disabled(currentIndex == 0)
 
                 Spacer()
 
                 Button(action: nextImage) { Image(systemName: "chevron.right") }
                     .controlSize(.extraLarge)
-                    .buttonStyle(.glass)
+//                    .buttonStyle(.glass)
                     .disabled(currentIndex == urls.count - 1)
             }
             .padding(.horizontal)

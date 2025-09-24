@@ -6,7 +6,8 @@ import PackageDescription
 let package = Package(
     name: "SwiftMediaViewer",
     platforms: [
-        .iOS(.v18)
+        .iOS(.v18),
+        .macOS(.v15)
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -20,7 +21,6 @@ let package = Package(
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "SwiftMediaViewer",
-            dependencies: ["CachedAsyncImage"]
         ),
     ]
 )

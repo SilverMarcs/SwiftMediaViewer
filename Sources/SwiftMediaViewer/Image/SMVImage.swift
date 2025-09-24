@@ -32,7 +32,7 @@ public struct SMVImage: View {
                     }
             }
         }
-        .fullScreenCover(isPresented: $showFullscreen) {
+        .conditionalFullScreen(isPresented: $showFullscreen) {
             SMVImageModal(
                 urls: [url], // Single image array
                 startIndex: 0,
