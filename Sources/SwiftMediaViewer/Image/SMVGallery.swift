@@ -34,6 +34,8 @@ public struct SMVGallery: View {
         }
     }
     
+    @State private var selectedIndex: Int? = nil
+    
     @ViewBuilder
     private func mainWithThumbsLayout(thumbSize: CGFloat, maxThumbs: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -46,8 +48,7 @@ public struct SMVGallery: View {
                     .matchedTransitionSource(id: firstURL, in: galleryNamespace)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        startIndex = 0
-                        showFullscreen = true
+                        selectedIndex = 0
                     }
             }
             
@@ -83,21 +84,23 @@ public struct SMVGallery: View {
                                     }
                                 }
                                 .onTapGesture {
-                                    startIndex = actualIndex
-                                    showFullscreen = true
+                                    selectedIndex = actualIndex
                                 }
+
                         }
                     }
                 }
             }
         }
-        .fullScreenCover(isPresented: $showFullscreen) {
+        .fullScreenCover(item: $selectedIndex) { index in
             SMVImageModal(
-                urls: images, 
-                startIndex: startIndex, 
-                targetSize: targetSize, 
+                urls: images,
+                startIndex: index,
+                targetSize: targetSize,
                 namespace: galleryNamespace
             )
         }
     }
 }
+
+extension Int: Identifiable { public var id: Int { self } }
