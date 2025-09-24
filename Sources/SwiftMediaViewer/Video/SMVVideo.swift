@@ -53,7 +53,6 @@ public struct SMVVideo: View {
                 VideoPlayer(player: player)
                     .navigationTransition(.zoom(sourceID: videoURL, in: ns))
                     .ignoresSafeArea()
-                    .zoomable()
             }
     }
 
