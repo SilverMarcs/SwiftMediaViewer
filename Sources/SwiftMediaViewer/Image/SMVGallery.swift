@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import CachedAsyncImage
 
 public enum SMVGalleryLayout {
     case mainWithThumbs(thumbSize: CGFloat = 80, maxThumbs: Int = 3)

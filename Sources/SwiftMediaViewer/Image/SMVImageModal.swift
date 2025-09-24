@@ -3,7 +3,6 @@
 //
 
 import SwiftUI
-import CachedAsyncImage
 
 public struct SMVImageModal: View {
     let urls: [String]

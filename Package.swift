@@ -15,9 +15,6 @@ let package = Package(
             targets: ["SwiftMediaViewer"]
         ),
     ],
-    dependencies: [
-        .package(url: "https://github.com/SilverMarcs/CachedAsyncImage", from: "1.0.0")
-    ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.

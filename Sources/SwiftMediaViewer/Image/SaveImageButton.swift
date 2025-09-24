@@ -7,7 +7,7 @@
 
 import SwiftUI
 import Photos
-import CachedAsyncImage
+import SwiftMediaViewer
 
 #if os(iOS)
   import UIKit
