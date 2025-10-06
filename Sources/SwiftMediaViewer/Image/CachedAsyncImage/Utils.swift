@@ -20,6 +20,33 @@ typealias PlatformImage = NSImage
 typealias PlatformImage = UIImage
 #endif
 
+extension Image {
+    init(platformImage: PlatformImage) {
+        #if os(macOS)
+        self.init(nsImage: platformImage)
+        #else
+        self.init(uiImage: platformImage)
+        #endif
+    }
+}
+
+extension PlatformImage {
+    static func from(data: Data) -> PlatformImage? {
+        #if os(macOS)
+        return NSImage(data: data)
+        #else
+        return UIImage(data: data)
+        #endif
+    }
+}
+
+// MARK: - Safe Array Access
+extension Collection {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
+
 @inline(__always)
 func sha256Hex(_ string: String) -> String {
     let data = Data(string.utf8)
