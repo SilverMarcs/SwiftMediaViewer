@@ -7,65 +7,89 @@
 
 import SwiftUI
 import Photos
-import SwiftMediaViewer
 
-#if os(iOS)
-  import UIKit
-  typealias OSImage = UIImage
-#elseif os(macOS)
-  import AppKit
-  typealias OSImage = NSImage
-#endif
-
-struct SaveImageButton: View {
-  let imageURL: String
-  @State private var isSaving = false
-
-  var body: some View {
-    Button {
-      Task { await saveImage() }
-    } label: {
-      Image(systemName: isSaving ? "checkmark" : "arrow.down")
-        .foregroundStyle(isSaving ? .green : .primary)
+public struct SaveImageButton: View {
+    enum ImageSource {
+        case url(String)
+        case data(Data)
     }
-//    .buttonStyle(.glass)
-    .disabled(isSaving)
-  }
-
-  private func saveImage() async {
-      print("TBI") // load from cache
-    guard let url = URL(string: imageURL) else { return }
-
-    isSaving = true
-    defer { isSaving = false }
-
-    do {
-      // 1) Try cache first
-      let image: OSImage
-//      if let cached = await MemoryCache.shared.get(for: imageURL) {
-//        image = cached
-//      } else {
-        
-        // 2) Otherwise download
-        let (data, _) = try await URLSession.shared.data(from: url)
-        
-        guard let ui = OSImage(data: data) else {
-          throw NSError(domain: "SaveImage", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid image data"])
+    
+    let source: ImageSource
+    @State private var isSaved = false
+    @State private var isSaving = false
+    
+    public init(url: String) {
+        self.source = .url(url)
+    }
+    
+    public init(data: Data) {
+        self.source = .data(data)
+    }
+    
+    public var body: some View {
+        Button {
+            Task { await saveImage() }
+        } label: {
+            Image(systemName: isSaved ? "checkmark" : "arrow.down")
+                .foregroundStyle(isSaved ? .green : .primary)
         }
-        image = ui
-//      }
-
-      // 3) Write into the Photos library
-      try await PHPhotoLibrary.shared().performChanges {
-        @Sendable in
-        PHAssetChangeRequest.creationRequestForAsset(from: image)
-      }
-
-      // (optional) brief success feedback
-      try? await Task.sleep(nanoseconds: 500_000_000)
+        .buttonStyle(.glass)
+        .buttonBorderShape(.circle)
+        .disabled(isSaving || isSaved)
     }
-    catch {
-      print("❌ Failed to save image:", error)
+    
+    private func saveImage() async {
+        guard !isSaving else { return }
+        
+        isSaving = true
+        defer { isSaving = false }
+        
+        do {
+            let image: PlatformImage
+            
+            switch source {
+            case .url(let urlString):
+                guard let url = URL(string: urlString) else { return }
+                
+                // Try cache first
+                if let cached = await MemoryCache.shared.get(for: url) {
+                    image = cached
+                } else {
+                    // Download
+                    let (data, _) = try await URLSession.shared.data(from: url)
+                    guard let downloadedImage = PlatformImage(data: data) else {
+                        print("❌ Failed to create image from data")
+                        return
+                    }
+                    image = downloadedImage
+                }
+                
+            case .data(let data):
+                guard let dataImage = PlatformImage(data: data) else {
+                    print("❌ Failed to create image from data")
+                    return
+                }
+                image = dataImage
+            }
+            
+            // Request authorization and save
+            let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+            guard status == .authorized else {
+                print("❌ Photo library access not authorized")
+                return
+            }
+            
+            try await PHPhotoLibrary.shared().performChanges {
+                PHAssetChangeRequest.creationRequestForAsset(from: image)
+            }
+            
+            // Show success for 2 seconds
+            isSaved = true
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            isSaved = false
+            
+        } catch {
+            print("❌ Failed to save image:", error)
+        }
     }
-  }
 }

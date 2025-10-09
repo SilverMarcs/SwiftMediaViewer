@@ -1,5 +1,5 @@
 //
-//  SMVGalleryView.swift
+//  SMVGalleryData.swift
 //  SwiftMediaViewer
 //
 //  Created by Zabir Raihan on 25/09/2025.
@@ -7,24 +7,19 @@
 
 import SwiftUI
 
-public enum SMVGalleryLayout {
-    case mainWithThumbs(thumbSize: CGFloat = 80, maxThumbs: Int = 3)
-    case grid(columns: Int = 3, spacing: CGFloat = 8)
-}
-
-public struct SMVGallery: View {
-    let images: [String] // Just URLs
+public struct SMVGalleryData: View {
+    let dataItems: [Data]
     let layout: SMVGalleryLayout
-    let targetSize: Int
+    let sourceID: String
     
     @Namespace private var galleryNamespace
     @State private var showFullscreen = false
     @State private var startIndex = 0
     
-    public init(images: [String], layout: SMVGalleryLayout = .mainWithThumbs(), targetSize: Int = 600) {
-        self.images = images
+    public init(dataItems: [Data], layout: SMVGalleryLayout = .mainWithThumbs(), sourceID: String = UUID().uuidString) {
+        self.dataItems = dataItems
         self.layout = layout
-        self.targetSize = targetSize
+        self.sourceID = sourceID
     }
     
     public var body: some View {
@@ -42,13 +37,15 @@ public struct SMVGallery: View {
     private func mainWithThumbsLayout(thumbSize: CGFloat, maxThumbs: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             // Main image (first image)
-            if let firstURL = images.first, let url = URL(string: firstURL) {
-                CachedAsyncImage(url: url, targetSize: targetSize)
-                    .aspectRatio(contentMode: .fit)
+            if let firstData = dataItems.first,
+               let image = PlatformImage.from(data: firstData) {
+                Image(platformImage: image)
+                    .resizable()
+                    .scaledToFit()
                     .cornerRadius(12)
                     .clipped()
                     #if !os(macOS)
-                    .matchedTransitionSource(id: firstURL, in: galleryNamespace)
+                    .matchedTransitionSource(id: "\(sourceID)-0", in: galleryNamespace)
                     #endif
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -57,27 +54,28 @@ public struct SMVGallery: View {
             }
             
             // Thumbnails (remaining images)
-            if images.count > 1 {
-                let remainingImages = Array(images.dropFirst())
-                let displayImages = Array(remainingImages.prefix(maxThumbs))
-                let remainingCount = remainingImages.count - displayImages.count
+            if dataItems.count > 1 {
+                let remainingData = Array(dataItems.dropFirst())
+                let displayData = Array(remainingData.prefix(maxThumbs))
+                let remainingCount = remainingData.count - displayData.count
                 
                 HStack(spacing: 8) {
-                    ForEach(Array(displayImages.enumerated()), id: \.offset) { thumbIndex, imageURL in
+                    ForEach(Array(displayData.enumerated()), id: \.offset) { thumbIndex, data in
                         let actualIndex = thumbIndex + 1 // +1 because we skipped first image
                         
-                        if let url = URL(string: imageURL) {
-                            CachedAsyncImage(url: url, targetSize: targetSize)
+                        if let image = PlatformImage.from(data: data) {
+                            Image(platformImage: image)
+                                .resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .frame(width: thumbSize, height: thumbSize)
                                 .cornerRadius(8)
                                 .clipped()
                                 #if !os(macOS)
-                                .matchedTransitionSource(id: imageURL, in: galleryNamespace)
+                                .matchedTransitionSource(id: "\(sourceID)-\(actualIndex)", in: galleryNamespace)
                                 #endif
                                 .contentShape(Rectangle())
                                 .overlay {
-                                    if thumbIndex == displayImages.count - 1 && remainingCount > 0 {
+                                    if thumbIndex == displayData.count - 1 && remainingCount > 0 {
                                         Rectangle()
                                             .fill(.black.opacity(0.6))
                                             .cornerRadius(8)
@@ -98,11 +96,11 @@ public struct SMVGallery: View {
             }
         }
         .conditionalFullScreen(item: $selectedIndex) { index in
-            SMVImageModal(
-                urls: images,
+            SMVImageDataModal(
+                dataItems: dataItems,
                 startIndex: index,
-                targetSize: targetSize,
-                namespace: galleryNamespace
+                namespace: galleryNamespace,
+                sourceID: sourceID
             )
         }
     }
@@ -112,16 +110,17 @@ public struct SMVGallery: View {
         let gridColumns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: columns)
         
         LazyVGrid(columns: gridColumns, spacing: spacing) {
-            ForEach(Array(images.enumerated()), id: \.offset) { index, imageURL in
-                if let url = URL(string: imageURL) {
-                    CachedAsyncImage(url: url, targetSize: targetSize)
+            ForEach(Array(dataItems.enumerated()), id: \.offset) { index, data in
+                if let image = PlatformImage.from(data: data) {
+                    Image(platformImage: image)
+                        .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
                         .clipped()
                         .aspectRatio(1, contentMode: .fit)
                         .cornerRadius(8)
                         #if !os(macOS)
-                        .matchedTransitionSource(id: imageURL, in: galleryNamespace)
+                        .matchedTransitionSource(id: "\(sourceID)-\(index)", in: galleryNamespace)
                         #endif
                         .contentShape(Rectangle())
                         .onTapGesture {
@@ -131,14 +130,12 @@ public struct SMVGallery: View {
             }
         }
         .conditionalFullScreen(item: $selectedIndex) { index in
-            SMVImageModal(
-                urls: images,
+            SMVImageDataModal(
+                dataItems: dataItems,
                 startIndex: index,
-                targetSize: targetSize,
-                namespace: galleryNamespace
+                namespace: galleryNamespace,
+                sourceID: sourceID
             )
         }
     }
 }
-
-extension Int: @retroactive Identifiable { public var id: Int { self } }

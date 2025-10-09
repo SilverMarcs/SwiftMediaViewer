@@ -29,17 +29,25 @@ public struct SMVImageDataModal: View {
                     .resizable()
                     .scaledToFit()
                     .zoomable()
+                    .overlay(alignment: .bottomTrailing) {
+                        SaveImageButton(data: currentData)
+                            .padding()
+                    }
             }
 
             HStack {
                 Button(action: previousImage) { Image(systemName: "chevron.left") }
                     .controlSize(.extraLarge)
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
                     .disabled(currentIndex == 0)
 
                 Spacer()
 
                 Button(action: nextImage) { Image(systemName: "chevron.right") }
                     .controlSize(.extraLarge)
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
                     .disabled(currentIndex == dataItems.count - 1)
             }
             .padding(.horizontal)
@@ -53,6 +61,10 @@ public struct SMVImageDataModal: View {
                         .resizable()
                         .scaledToFit()
                         .zoomable()
+                        .overlay(alignment: .bottomTrailing) {
+                            SaveImageButton(data: data)
+                                .padding()
+                        }
                         .tag(index)
                 }
             }
