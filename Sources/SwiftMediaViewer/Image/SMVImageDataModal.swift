@@ -29,10 +29,6 @@ public struct SMVImageDataModal: View {
                     .resizable()
                     .scaledToFit()
                     .zoomable()
-                    .overlay(alignment: .bottomTrailing) {
-                        SaveImageButton(data: currentData)
-                            .padding()
-                    }
             }
 
             HStack {
@@ -61,10 +57,6 @@ public struct SMVImageDataModal: View {
                         .resizable()
                         .scaledToFit()
                         .zoomable()
-                        .overlay(alignment: .bottomTrailing) {
-                            SaveImageButton(data: data)
-                                .padding()
-                        }
                         .tag(index)
                 }
             }

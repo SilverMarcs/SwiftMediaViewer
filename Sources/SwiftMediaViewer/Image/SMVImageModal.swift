@@ -31,23 +31,21 @@ public struct SMVImageModal: View {
             if let currentURL = URL(string: urls[safe: currentIndex] ?? "") {
                 CachedAsyncImage(url: currentURL, targetSize: 50)
                     .zoomable()
-                    .overlay(alignment: .bottomTrailing) {
-                        SaveImageButton(url: urls[safe: currentIndex] ?? "")
-                            .padding()
-                    }
             }
 
             HStack {
                 Button(action: previousImage) { Image(systemName: "chevron.left") }
                     .controlSize(.extraLarge)
-//                    .buttonStyle(.glass)
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
                     .disabled(currentIndex == 0)
 
                 Spacer()
 
                 Button(action: nextImage) { Image(systemName: "chevron.right") }
                     .controlSize(.extraLarge)
-//                    .buttonStyle(.glass)
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
                     .disabled(currentIndex == urls.count - 1)
             }
             .padding(.horizontal)
@@ -60,10 +58,6 @@ public struct SMVImageModal: View {
                     CachedAsyncImage(url: u, targetSize: targetSize)
                         .aspectRatio(contentMode: .fit)
                         .zoomable()
-                        .overlay(alignment: .bottomTrailing) {
-                            SaveImageButton(url: s)
-                                .padding()
-                        }
                         .tag(index)
                         
                 }

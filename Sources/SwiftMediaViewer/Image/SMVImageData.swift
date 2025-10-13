@@ -24,7 +24,6 @@ public struct SMVImageData: View {
             if let image = PlatformImage.from(data: data) {
                 Image(platformImage: image)
                     .resizable()
-                    .scaledToFit()
                     #if !os(macOS)
                     .matchedTransitionSource(id: id, in: imageNamespace)
                     #endif

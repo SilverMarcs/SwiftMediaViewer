@@ -9,7 +9,6 @@ import SwiftUI
 
 public enum SMVGalleryLayout {
     case mainWithThumbs(thumbSize: CGFloat = 80, maxThumbs: Int = 3)
-    case grid(columns: Int = 3, spacing: CGFloat = 8)
 }
 
 public struct SMVGallery: View {
@@ -31,8 +30,6 @@ public struct SMVGallery: View {
         switch layout {
         case .mainWithThumbs(let thumbSize, let maxThumbs):
             mainWithThumbsLayout(thumbSize: thumbSize, maxThumbs: maxThumbs)
-        case .grid(let columns, let spacing):
-            gridLayout(columns: columns, spacing: spacing)
         }
     }
     
@@ -94,39 +91,6 @@ public struct SMVGallery: View {
                                 }
                         }
                     }
-                }
-            }
-        }
-        .conditionalFullScreen(item: $selectedIndex) { index in
-            SMVImageModal(
-                urls: images,
-                startIndex: index,
-                targetSize: targetSize,
-                namespace: galleryNamespace
-            )
-        }
-    }
-    
-    @ViewBuilder
-    private func gridLayout(columns: Int, spacing: CGFloat) -> some View {
-        let gridColumns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: columns)
-        
-        LazyVGrid(columns: gridColumns, spacing: spacing) {
-            ForEach(Array(images.enumerated()), id: \.offset) { index, imageURL in
-                if let url = URL(string: imageURL) {
-                    CachedAsyncImage(url: url, targetSize: targetSize)
-                        .aspectRatio(contentMode: .fill)
-                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-                        .clipped()
-                        .aspectRatio(1, contentMode: .fit)
-                        .cornerRadius(8)
-                        #if !os(macOS)
-                        .matchedTransitionSource(id: imageURL, in: galleryNamespace)
-                        #endif
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            selectedIndex = index
-                        }
                 }
             }
         }
