@@ -22,33 +22,34 @@ public struct SMVImageDataModal: View {
 
     public var body: some View {
         #if os(macOS)
-        ZStack {
-            if let currentData = dataItems[safe: currentIndex],
-               let image = PlatformImage.from(data: currentData) {
-                Image(platformImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .zoomable()
-            }
-
-            HStack {
-                Button(action: previousImage) { Image(systemName: "chevron.left") }
-                    .controlSize(.extraLarge)
-                    .buttonStyle(.glass)
-                    .buttonBorderShape(.circle)
-                    .disabled(currentIndex == 0)
-
-                Spacer()
-
-                Button(action: nextImage) { Image(systemName: "chevron.right") }
-                    .controlSize(.extraLarge)
-                    .buttonStyle(.glass)
-                    .buttonBorderShape(.circle)
-                    .disabled(currentIndex == dataItems.count - 1)
-            }
-            .padding(.horizontal)
+        if let currentData = dataItems[safe: currentIndex],
+           let image = PlatformImage.from(data: currentData) {
+            Image(platformImage: image)
+                .resizable()
+                .scaledToFit()
+                .zoomable()
+                .overlay {
+                    if dataItems.count > 1 {
+                        HStack {
+                            Button(action: previousImage) { Image(systemName: "chevron.left") }
+                                .controlSize(.extraLarge)
+                                .buttonStyle(.glass)
+                                .buttonBorderShape(.circle)
+                                .disabled(currentIndex == 0)
+                            
+                            Spacer()
+                            
+                            Button(action: nextImage) { Image(systemName: "chevron.right") }
+                                .controlSize(.extraLarge)
+                                .buttonStyle(.glass)
+                                .buttonBorderShape(.circle)
+                                .disabled(currentIndex == dataItems.count - 1)
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
         #else
         TabView(selection: $currentIndex) {
             ForEach(Array(dataItems.enumerated()), id: \.offset) { index, data in
