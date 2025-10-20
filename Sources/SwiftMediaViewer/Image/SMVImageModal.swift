@@ -27,7 +27,7 @@ public struct SMVImageModal: View {
 
      public var body: some View {
          #if os(macOS)
-         if let currentURL = URL(string: urls[safe: currentIndex] ?? "") {
+         if let currentURL = urls[safe: currentIndex] {
              CachedAsyncImage(url: currentURL, targetSize: 50)
                  .zoomable()
                  .frame(maxWidth: .infinity)
