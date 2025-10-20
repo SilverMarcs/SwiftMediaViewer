@@ -87,4 +87,26 @@ public actor DiskCache {
     public func cleanupIfNeeded() async {
         await checkDiskCacheSize()
     }
+
+    public func getDiskCacheSize() async -> Int64 {
+        guard let cacheDirectory = cacheDirectory else { return 0 }
+        
+        do {
+            let files = try fileManager.contentsOfDirectory(
+                at: cacheDirectory,
+                includingPropertiesForKeys: [.fileSizeKey],
+                options: []
+            )
+            
+            var totalSize: Int64 = 0
+            for fileURL in files {
+                let attributes = try fileURL.resourceValues(forKeys: [.fileSizeKey])
+                totalSize += Int64(attributes.fileSize ?? 0)
+            }
+            
+            return totalSize
+        } catch {
+            return 0
+        }
+    }
 }
