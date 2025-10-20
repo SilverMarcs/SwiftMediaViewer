@@ -5,14 +5,14 @@
 import SwiftUI
 
 public struct SMVImageModal: View {
-    let urls: [String]
+    let urls: [URL]
     let startIndex: Int
     let targetSize: Int
     let namespace: Namespace.ID
 
     @State private var currentIndex: Int
 
-    public init(urls: [String], startIndex: Int = 0, targetSize: Int, namespace: Namespace.ID) {
+    public init(urls: [URL], startIndex: Int = 0, targetSize: Int, namespace: Namespace.ID) {
         self.urls = urls
         self.startIndex = min(max(0, startIndex), max(0, urls.count - 1))
         self.targetSize = targetSize
@@ -20,8 +20,8 @@ public struct SMVImageModal: View {
         self._currentIndex = State(initialValue: self.startIndex)
     }
 
-    private var sourceID: String {
-        guard currentIndex < urls.count else { return urls.first ?? "" }
+    private var sourceID: URL {
+        guard currentIndex < urls.count else { return urls.first ?? URL(string: "")! }
         return urls[currentIndex]
     }
 
@@ -55,12 +55,10 @@ public struct SMVImageModal: View {
          #else
          TabView(selection: $currentIndex) {
              ForEach(Array(urls.enumerated()), id: \.offset) { index, s in
-                 if let u = URL(string: s) {
-                     CachedAsyncImage(url: u, targetSize: targetSize)
-                         .aspectRatio(contentMode: .fit)
-                         .zoomable()
-                         .tag(index)
-                 }
+                 CachedAsyncImage(url: s, targetSize: targetSize)
+                     .aspectRatio(contentMode: .fit)
+                     .zoomable()
+                     .tag(index)
              }
          }
          .ignoresSafeArea()

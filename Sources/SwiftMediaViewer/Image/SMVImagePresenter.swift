@@ -7,62 +7,86 @@
 
 import SwiftUI
 
-public struct SMVImageGateway: ViewModifier {
-    let presenter: SMVImagePresenter
-
-    public init(presenter: SMVImagePresenter) {
-        self.presenter = presenter
-    }
-
-    public func body(content: Content) -> some View {
-        @Bindable var p = presenter
-
-        content
-            .conditionalFullScreen(item: $p.payload) { payload in
-                SMVImageModal(
-                    urls: payload.urls,
-                    startIndex: payload.startIndex,
-                    targetSize: payload.targetSize,
-                    namespace: Namespace().wrappedValue
-                )
-            }
-    }
-}
-
-public extension View {
-    func smvImageGateway(presenter: SMVImagePresenter) -> some View {
-        modifier(SMVImageGateway(presenter: presenter))
-    }
-}
-
-public struct SMVImagePayload: Identifiable, Equatable {
-    public let id = UUID()
-    public let urls: [String]
-    public let startIndex: Int
-    public let targetSize: Int
-
-    public init(urls: [String], startIndex: Int = 0, targetSize: Int = 600) {
-        self.urls = urls
-        self.startIndex = startIndex
-        self.targetSize = targetSize
-    }
-}
-
-@Observable
+@MainActor
 public final class SMVImagePresenter {
-    public var payload: SMVImagePayload?
+    public static let shared = SMVImagePresenter()
     
-    public init() {}
-
-    public func present(urls: [String], startIndex: Int = 0, targetSize: Int) {
-        payload = SMVImagePayload(urls: urls, startIndex: startIndex, targetSize: targetSize)
+    #if canImport(UIKit)
+    private weak var presentedController: UIViewController?
+    #elseif canImport(AppKit)
+    private var presentedWindow: NSWindow?
+    #endif
+    
+    private init() {}
+    
+    public func present(url: URL, targetSize: Int = 600) {
+        #if canImport(UIKit)
+        presentIOS(url: url, targetSize: targetSize)
+        #elseif canImport(AppKit)
+        presentMacOS(url: url, targetSize: targetSize)
+        #endif
     }
+    
+    #if canImport(UIKit)
 
-    public func present(url: String, targetSize: Int) {
-        present(urls: [url], startIndex: 0, targetSize: targetSize)
+    #endif
+    
+    #if os(macOS)
+    private func presentMacOS(url: URL, targetSize: Int) {
+        guard let keyWindow = NSApplication.shared.keyWindow else {
+            return
+        }
+        
+        let view = SMVImageModal(
+            urls: [url],
+            targetSize: targetSize,
+            namespace: Namespace().wrappedValue
+        )
+        
+        let hosting = NSHostingController(rootView: view)
+        
+        // Present as sheet attached to the key window
+        keyWindow.contentViewController?.presentAsSheet(hosting)
+        presentedWindow = keyWindow
     }
+    #else
+    private func presentIOS(url: URL, targetSize: Int) {
+        guard let windowScene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive }),
+              let topVC = windowScene.windows.first(where: \.isKeyWindow)?
+                .rootViewController?.topMostViewController() else {
+            return
+        }
+        
+        let view = SMVImageModal(
+            urls: [url],
+            targetSize: targetSize,
+            namespace: Namespace().wrappedValue
+        )
+        
+        let hosting = UIHostingController(rootView: view)
+        hosting.modalPresentationStyle = .formSheet
+        
+        topVC.present(hosting, animated: true)
+        presentedController = hosting
+    }
+    #endif
+}
 
-    public func dismiss() {
-        payload = nil
+#if canImport(UIKit)
+extension UIViewController {
+    func topMostViewController() -> UIViewController {
+        if let presented = presentedViewController {
+            return presented.topMostViewController()
+        }
+        if let nav = self as? UINavigationController {
+            return nav.visibleViewController?.topMostViewController() ?? self
+        }
+        if let tab = self as? UITabBarController {
+            return tab.selectedViewController?.topMostViewController() ?? self
+        }
+        return self
     }
 }
+#endif
