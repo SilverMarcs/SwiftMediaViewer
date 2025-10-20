@@ -11,25 +11,21 @@ import SwiftUI
 public final class SMVImagePresenter {
     public static let shared = SMVImagePresenter()
     
-    #if canImport(UIKit)
-    private weak var presentedController: UIViewController?
-    #elseif canImport(AppKit)
+    #if os(macOS)
     private var presentedWindow: NSWindow?
+    #else
+    private weak var presentedController: UIViewController?
     #endif
     
     private init() {}
     
     public func present(url: URL, targetSize: Int = 600) {
-        #if canImport(UIKit)
-        presentIOS(url: url, targetSize: targetSize)
-        #elseif canImport(AppKit)
+        #if os(macOS)
         presentMacOS(url: url, targetSize: targetSize)
+        #else
+        presentIOS(url: url, targetSize: targetSize)
         #endif
     }
-    
-    #if canImport(UIKit)
-
-    #endif
     
     #if os(macOS)
     private func presentMacOS(url: URL, targetSize: Int) {
@@ -74,7 +70,7 @@ public final class SMVImagePresenter {
     #endif
 }
 
-#if canImport(UIKit)
+#if !os(macOS)
 extension UIViewController {
     func topMostViewController() -> UIViewController {
         if let presented = presentedViewController {
