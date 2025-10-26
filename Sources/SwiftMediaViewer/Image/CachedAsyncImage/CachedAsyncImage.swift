@@ -8,10 +8,9 @@
 import SwiftUI
 
 /// A SwiftUI view that loads and displays images asynchronously with automatic caching.
-public struct CachedAsyncImage<Placeholder: View>: View {
+public struct CachedAsyncImage: View {
     let url: URL?
     let targetSize: Int
-    let placeholder: () -> Placeholder
 
     #if os(macOS)
     @State private var image: NSImage?
@@ -21,14 +20,10 @@ public struct CachedAsyncImage<Placeholder: View>: View {
 
     public init(
         url: URL?,
-        targetSize: Int,
-        @ViewBuilder placeholder: @escaping () -> Placeholder = {
-            Rectangle().fill(.background.secondary)
-        }
+        targetSize: Int
     ) {
         self.url = url
         self.targetSize = targetSize
-        self.placeholder = placeholder
     }
 
     public var body: some View {
@@ -40,7 +35,7 @@ public struct CachedAsyncImage<Placeholder: View>: View {
                 Image(uiImage: image).resizable()
                 #endif
             } else {
-                placeholder()
+                Rectangle().fill(.background.secondary)
             }
         }
         .task(id: url) {
