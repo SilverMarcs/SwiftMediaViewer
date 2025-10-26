@@ -10,6 +10,8 @@ import Foundation
 public actor DiskCache {
     public static let shared = DiskCache()
     private let fileManager = FileManager.default
+    
+    static let maxSize = 1024 * 1024 * 150
 
     private var cacheDirectory: URL? {
         fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first?
@@ -26,10 +28,8 @@ public actor DiskCache {
         return dir.appendingPathComponent(cacheKey(for: url))
     }
 
-    // Now async since it awaits the configuration actor
     private func checkDiskCacheSize() async {
         guard let cacheDirectory = cacheDirectory else { return }
-        let config = await CachedAsyncImageConfiguration.shared.configuration
 
         do {
             let files = try fileManager.contentsOfDirectory(
@@ -49,9 +49,9 @@ public actor DiskCache {
                 fileInfos.append((url: fileURL, size: size, date: date))
             }
 
-            if totalSize > config.diskCacheLimit {
+            if totalSize > Self.maxSize {
                 fileInfos.sort { $0.date < $1.date }
-                var sizeToRemove = totalSize - Int64(config.diskCacheLimit)
+                var sizeToRemove = totalSize - Int64(Self.maxSize)
                 for info in fileInfos where sizeToRemove > 0 {
                     try? fileManager.removeItem(at: info.url)
                     sizeToRemove -= info.size

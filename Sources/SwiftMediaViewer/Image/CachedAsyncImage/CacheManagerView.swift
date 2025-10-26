@@ -32,7 +32,10 @@ public struct CacheManagerView: View {
         #endif
         .alert("Clear Image Cache", isPresented: $deleteAlertPresented) {
             Button("Clear", role: .destructive) {
-                CachedAsyncImageConfiguration.clearAllCaches()
+                Task {
+                    await MemoryCache.shared.clearCache()
+                    await DiskCache.shared.clearCache()
+                }
                 Task {
                     diskCacheSize = await DiskCache.shared.getDiskCacheSize()
                 }

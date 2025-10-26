@@ -17,14 +17,7 @@ public actor MemoryCache {
     #endif
 
     init() {
-        let defaultConfig = CacheConfiguration.default
-        cache.totalCostLimit = defaultConfig.memoryCostLimit
-    }
-
-    // Now async because it awaits the configuration actor
-    public func updateLimits() async {
-        let config = await CachedAsyncImageConfiguration.shared.configuration
-        cache.totalCostLimit = config.memoryCostLimit
+        cache.totalCostLimit = 1024 * 1024 * 50
     }
 
     #if os(macOS)
