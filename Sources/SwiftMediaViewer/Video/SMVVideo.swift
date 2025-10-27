@@ -5,12 +5,6 @@
 //  Created by Zabir Raihan on 25/09/2025.
 //
 
-
-//
-//  SMVVideo.swift
-//  SwiftMediaView (standalone folder to be turned into a Swift Package)
-//
-
 import SwiftUI
 import AVKit
 
@@ -33,7 +27,6 @@ public struct SMVVideo: View {
 
     public var body: some View {
         VideoPlayer(player: player)
-            // No aspectRatio or cornerRadius here; caller applies
             .matchedGeometryEffect(id: videoURL, in: ns)
             .overlay(
                 Rectangle()
@@ -41,6 +34,7 @@ public struct SMVVideo: View {
                     .contentShape(Rectangle())
                     .onTapGesture {
                         showModal = true
+                        configureAudioSession(active: true)
                     }
             )
             .task {
@@ -48,6 +42,7 @@ public struct SMVVideo: View {
             }
             .onDisappear {
                 cleanupPlayer()
+                configureAudioSession(active: false)
             }
             .conditionalFullScreen(isPresented: $showModal) {
                 VideoPlayer(player: player)
@@ -55,6 +50,9 @@ public struct SMVVideo: View {
                     .navigationTransition(.zoom(sourceID: videoURL, in: ns))
                     #endif
                     .ignoresSafeArea()
+                    .onDisappear {
+                        configureAudioSession(active: false)
+                    }
             }
     }
 
@@ -72,6 +70,7 @@ public struct SMVVideo: View {
         player = queuePlayer
 
         if autoplay {
+            configureAudioSession(active: true)
             queuePlayer.play()
         }
     }
@@ -82,5 +81,24 @@ public struct SMVVideo: View {
         playerLooper = nil
         player?.replaceCurrentItem(with: nil)
         player = nil
+    }
+
+    private func configureAudioSession(active: Bool) {
+        #if os(iOS)
+        let audioSession = AVAudioSession.sharedInstance()
+        
+        do {
+            if active {
+                // Duck other audio (lowers volume of other apps)
+                try audioSession.setCategory(.playback, options: [.duckOthers, .mixWithOthers])
+                try audioSession.setActive(true)
+            } else {
+                // Restore other audio
+                try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+            }
+        } catch {
+            print("Failed to configure audio session: \(error)")
+        }
+        #endif
     }
 }
