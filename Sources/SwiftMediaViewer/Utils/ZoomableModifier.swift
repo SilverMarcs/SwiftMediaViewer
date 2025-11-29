@@ -3,6 +3,10 @@
 //  ImageViewer
 // https://github.com/ryohey/Zoomable/blob/525c0e1784825261b84d21c5cd5a159245a40ea6/Sources/Zoomable/Zoomable.swift
 //
+//
+//  ZoomableModifier.swift
+//  ImageViewer
+//
 
 import SwiftUI
 
@@ -30,6 +34,9 @@ struct ZoomableModifier: ViewModifier {
             .gesture(doubleTapGesture)
     }
 
+    // MARK: - Gestures
+
+    // Pinch / magnification
     #if os(tvOS)
     private var magnificationGesture: some Gesture {
         EmptyGesture()
@@ -53,6 +60,7 @@ struct ZoomableModifier: ViewModifier {
     }
     #endif
 
+    // Double tap
     #if os(tvOS)
     private var doubleTapGesture: some Gesture {
         TapGesture(count: 2)
@@ -94,6 +102,12 @@ struct ZoomableModifier: ViewModifier {
     }
     #endif
 
+    // Drag / pan
+    #if os(tvOS)
+    private var dragGesture: some Gesture {
+        EmptyGesture()
+    }
+    #else
     private var dragGesture: some Gesture {
         DragGesture()
             .onChanged { value in
@@ -108,6 +122,9 @@ struct ZoomableModifier: ViewModifier {
                 onEndGesture()
             }
     }
+    #endif
+
+    // MARK: - Logic
 
     private func onEndGesture() {
         let newTransform = limitTransform(transform)
@@ -122,9 +139,7 @@ struct ZoomableModifier: ViewModifier {
         let scaleX = transform.scaleX
         let scaleY = transform.scaleY
 
-        if scaleX < minZoomScale
-            || scaleY < minZoomScale
-        {
+        if scaleX < minZoomScale || scaleY < minZoomScale {
             return .identity
         }
 
@@ -147,6 +162,8 @@ struct ZoomableModifier: ViewModifier {
         return transform
     }
 }
+
+// MARK: - Public API
 
 public extension View {
     @ViewBuilder
@@ -177,6 +194,8 @@ public extension View {
         }
     }
 }
+
+// MARK: - Helpers
 
 private extension View {
     @ViewBuilder
