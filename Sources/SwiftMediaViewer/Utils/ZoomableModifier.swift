@@ -30,6 +30,11 @@ struct ZoomableModifier: ViewModifier {
             .gesture(doubleTapGesture)
     }
 
+    #if os(tvOS)
+    private var magnificationGesture: some Gesture {
+        EmptyGesture()
+    }
+    #else
     private var magnificationGesture: some Gesture {
         MagnifyGesture(minimumScaleDelta: 0)
             .onChanged { value in
@@ -46,7 +51,31 @@ struct ZoomableModifier: ViewModifier {
                 onEndGesture()
             }
     }
+    #endif
 
+    #if os(tvOS)
+    private var doubleTapGesture: some Gesture {
+        TapGesture(count: 2)
+            .onEnded {
+                let anchor = CGPoint(
+                    x: contentSize.width / 2,
+                    y: contentSize.height / 2
+                )
+
+                let newTransform: CGAffineTransform =
+                    if transform.isIdentity {
+                        .anchoredScale(scale: doubleTapZoomScale, anchor: anchor)
+                    } else {
+                        .identity
+                    }
+
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    transform = newTransform
+                    lastTransform = newTransform
+                }
+            }
+    }
+    #else
     private var doubleTapGesture: some Gesture {
         SpatialTapGesture(count: 2)
             .onEnded { value in
@@ -63,14 +92,15 @@ struct ZoomableModifier: ViewModifier {
                 }
             }
     }
+    #endif
 
     private var dragGesture: some Gesture {
         DragGesture()
             .onChanged { value in
                 withAnimation(.interactiveSpring) {
                     transform = lastTransform.translatedBy(
-                        x: value.translation.width / transform.scaleX,
-                        y: value.translation.height / transform.scaleY
+                        x: value.translation.width / max(transform.scaleX, .leastNonzeroMagnitude),
+                        y: value.translation.height / max(transform.scaleY, .leastNonzeroMagnitude)
                     )
                 }
             }
@@ -136,7 +166,7 @@ public extension View {
         doubleTapZoomScale: CGFloat = 3,
         outOfBoundsColor: Color = .clear
     ) -> some View {
-        GeometryReader { proxy in
+        GeometryReader { _ in
             ZStack {
                 outOfBoundsColor
                 self.zoomable(
