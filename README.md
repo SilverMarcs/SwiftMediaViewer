@@ -1,4 +1,4 @@
-(# SwiftMediaViewer)
+# SwiftMediaViewer
 
 A lightweight SwiftUI package for presenting remote images and videos with optional fullscreen, thumbnails and simple caching.
 
@@ -21,13 +21,22 @@ Quick examples
 import SwiftUI
 import SwiftMediaViewer
 
-SMVImage(url: "https://example.com/image.jpg", targetSize: 600)
+SMVImage(
+    url: URL(string: "https://example.com/image.jpg")!,
+    targetSize: 600
+)
 ```
 
 - Gallery with thumbnails:
 
 ```swift
-SMVGallery(images: ["https://.../1.jpg", "https://.../2.jpg", "https://.../3.jpg"])
+SMVGallery(
+    images: [
+        URL(string: "https://.../1.jpg")!,
+        URL(string: "https://.../2.jpg")!,
+        URL(string: "https://.../3.jpg")!
+    ]
+)
 ```
 
 - Inline video view:
@@ -40,21 +49,15 @@ SMVVideo(videoURL: "https://example.com/video.mp4")
 
 ```swift
 struct ContentView: View {
-    @State private var presenter = SMVImagePresenter()
-
     var body: some View {
         VStack {
             Button("Show Images") {
-                presenter.present(urls: ["https://.../1.jpg", "https://.../2.jpg"], targetSize: 600)
+                guard let url = URL(string: "https://.../1.jpg") else { return }
+                SMVImagePresenter.shared.present(url: url, targetSize: 600)
             }
         }
-        .smvImageGateway(presenter: presenter)
     }
 }
 ```
 
 See source files under `Sources/SwiftMediaViewer` for more customization points.
-
-License
-- MIT (see `LICENSE`)
-
