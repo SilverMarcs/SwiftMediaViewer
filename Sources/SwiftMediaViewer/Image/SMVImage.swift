@@ -21,7 +21,7 @@ public struct SMVImage: View {
 
     public var body: some View {
         CachedAsyncImage(url: url, targetSize: targetSize)
-            #if !os(macOS)
+            #if !os(macOS) && !os(tvOS)
             .matchedTransitionSource(id: url, in: imageNamespace)
             #endif
             .contentShape(Rectangle())

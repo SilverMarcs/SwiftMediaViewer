@@ -39,7 +39,7 @@ struct ZoomableModifier: ViewModifier {
     // Pinch / magnification
     #if os(tvOS)
     private var magnificationGesture: some Gesture {
-        EmptyGesture()
+        TapGesture().map { _ in () }
     }
     #else
     private var magnificationGesture: some Gesture {
@@ -105,7 +105,7 @@ struct ZoomableModifier: ViewModifier {
     // Drag / pan
     #if os(tvOS)
     private var dragGesture: some Gesture {
-        EmptyGesture()
+        TapGesture().map { _ in () }
     }
     #else
     private var dragGesture: some Gesture {

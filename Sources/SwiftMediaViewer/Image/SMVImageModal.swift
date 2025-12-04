@@ -26,7 +26,7 @@ public struct SMVImageModal: View {
     }
 
      public var body: some View {
-         #if os(macOS)
+         #if os(macOS) || os(tvOS)
          if let currentURL = urls[safe: currentIndex] {
              CachedAsyncImage(url: currentURL, targetSize: 50)
                  .zoomable()
@@ -35,17 +35,25 @@ public struct SMVImageModal: View {
                      if urls.count > 1 {
                          HStack {
                              Button(action: previousImage) { Image(systemName: "chevron.left") }
+                                 #if os(tvOS)
+                                 .buttonStyle(.bordered)
+                                 #else
                                  .controlSize(.extraLarge)
                                  .buttonStyle(.glass)
                                  .buttonBorderShape(.circle)
+                                 #endif
                                  .disabled(currentIndex == 0)
                              
                              Spacer()
                              
                              Button(action: nextImage) { Image(systemName: "chevron.right") }
+                                 #if os(tvOS)
+                                 .buttonStyle(.bordered)
+                                 #else
                                  .controlSize(.extraLarge)
                                  .buttonStyle(.glass)
                                  .buttonBorderShape(.circle)
+                                 #endif
                                  .disabled(currentIndex == urls.count - 1)
                          }
                          .padding(.horizontal)
