@@ -11,6 +11,7 @@ import SwiftUI
 public struct CachedAsyncImage: View {
     let url: URL?
     let targetSize: Int
+    let opaque: Bool
 
     #if os(macOS)
     @State private var image: NSImage?
@@ -20,10 +21,12 @@ public struct CachedAsyncImage: View {
 
     public init(
         url: URL?,
-        targetSize: Int
+        targetSize: Int,
+        opaque: Bool = true
     ) {
         self.url = url
         self.targetSize = targetSize
+        self.opaque = opaque
     }
 
     public var body: some View {
@@ -35,7 +38,9 @@ public struct CachedAsyncImage: View {
                 Image(uiImage: image).resizable()
                 #endif
             } else {
-                Rectangle().fill(.background.secondary)
+                Rectangle()
+                    .fill(.background.secondary)
+                    .opacity(opaque ? 1 : 0)
             }
         }
         .task(id: url) {

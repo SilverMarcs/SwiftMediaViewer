@@ -6,19 +6,23 @@
 //
 
 import SwiftUI
+#if !os(tvOS)
 import WebKit
+#endif
 
 public struct SMVGIFView: View {
     private let url: URL
     private let targetSize: Int
 
     @State private var isPlaying: Bool
+    #if !os(tvOS)
     @State private var page: WebPage?
+    #endif
 
     public init(
         url: URL,
         autoplay: Bool = true,
-        targetSize: Int = 1000,
+        targetSize: Int = 1000
     ) {
         self.url = url
         self.targetSize = targetSize
@@ -26,6 +30,9 @@ public struct SMVGIFView: View {
     }
 
     public var body: some View {
+        #if os(tvOS)
+        CachedAsyncImage(url: url, targetSize: targetSize)
+        #else
         let showGIF = isPlaying
 
         ZStack {
@@ -36,8 +43,10 @@ public struct SMVGIFView: View {
             guard showGIF else { return }
             await loadPageIfNeeded(for: url)
         }
+        #endif
     }
 
+    #if !os(tvOS)
     @ViewBuilder
     private func placeholderView(isVisible: Bool) -> some View {
         CachedAsyncImage(url: url, targetSize: targetSize)
@@ -116,4 +125,5 @@ public struct SMVGIFView: View {
 
         page = newPage
     }
+    #endif
 }

@@ -29,7 +29,7 @@ public struct SMVGallery: View {
                     .aspectRatio(contentMode: .fit)
                     .cornerRadius(12)
                     .clipped()
-#if !os(macOS)
+#if !os(macOS) && !os(tvOS)
                     .matchedTransitionSource(id: firstURL, in: galleryNamespace)
 #endif
                     .contentShape(Rectangle())
@@ -53,7 +53,7 @@ public struct SMVGallery: View {
                             .frame(width: 80, height: 80)
                             .cornerRadius(8)
                             .clipped()
-#if !os(macOS)
+#if !os(macOS) && !os(tvOS)
                             .matchedTransitionSource(id: imageURL, in: galleryNamespace)
 #endif
                             .contentShape(Rectangle())
