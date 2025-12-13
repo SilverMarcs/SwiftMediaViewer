@@ -33,7 +33,7 @@ public struct CachedAsyncImage<Placeholder: View>: View {
     public init(url: URL?, targetSize: Int) where Placeholder == Color {
         self.url = url
         self.targetSize = targetSize
-        self.placeholder = { Color.gray.opacity(0.2 ) }
+        self.placeholder = { Color(.darkGray).opacity(0.1) }
     }
 
     public var body: some View {
