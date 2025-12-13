@@ -9,16 +9,9 @@ import SwiftUI
 
 /// A SwiftUI view that loads and displays images asynchronously with automatic caching.
 public struct CachedAsyncImage<Placeholder: View>: View {
-    public struct DefaultPlaceholder: View {
-        public init() {}
-        public var body: some View {
-            Rectangle().fill(.background.secondary)
-        }
-    }
-
     let url: URL?
     let targetSize: Int
-    let opaque: Bool
+    let placeholder: () -> Placeholder
 
     #if os(macOS)
     @State private var image: NSImage?
@@ -34,6 +27,13 @@ public struct CachedAsyncImage<Placeholder: View>: View {
         self.url = url
         self.targetSize = targetSize
         self.placeholder = placeholder
+    }
+
+    // Default placeholder
+    public init(url: URL?, targetSize: Int) where Placeholder == Color {
+        self.url = url
+        self.targetSize = targetSize
+        self.placeholder = { Color.gray.opacity(0.2 ) }
     }
 
     public var body: some View {
@@ -55,16 +55,5 @@ public struct CachedAsyncImage<Placeholder: View>: View {
                 image = nil
             }
         }
-    }
-}
-
-public extension CachedAsyncImage where Placeholder == DefaultPlaceholder {
-    init(
-        url: URL?,
-        targetSize: Int
-    ) {
-        self.url = url
-        self.targetSize = targetSize
-        self.placeholder = { DefaultPlaceholder() }
     }
 }
