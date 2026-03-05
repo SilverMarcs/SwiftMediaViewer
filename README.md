@@ -1,4 +1,4 @@
-(# SwiftMediaViewer)
+# SwiftMediaViewer
 
 A lightweight SwiftUI package for presenting remote images and videos with optional fullscreen, thumbnails and simple caching.
 
@@ -54,7 +54,3 @@ struct ContentView: View {
 ```
 
 See source files under `Sources/SwiftMediaViewer` for more customization points.
-
-License
-- MIT (see `LICENSE`)
-
