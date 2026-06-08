@@ -56,6 +56,10 @@ func sha256Hex(_ string: String) -> String {
 
 @inline(__always)
 func cacheKey(for url: URL) -> String {
-    // For now, we hash url.absoluteString directly for stability.
-    sha256Hex(url.absoluteString)
+    if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+       let queryItems = components.queryItems,
+       let originalURL = queryItems.first(where: { $0.name == "url" })?.value {
+        return sha256Hex(originalURL)
+    }
+    return sha256Hex(url.absoluteString)
 }
