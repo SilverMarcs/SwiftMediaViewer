@@ -26,39 +26,43 @@ public struct SMVVideo: View {
     }
 
     public var body: some View {
-        VideoPlayer(player: player)
-            .matchedGeometryEffect(id: videoURL, in: ns)
-            .overlay(
+        Group {
+            #if os(macOS)
+            VideoPlayer(player: player)
+            #else
+            SMVPlayerLayerView(player: player)
+            #endif
+        }
+        .matchedGeometryEffect(id: videoURL, in: ns)
+        .overlay(
+            Button(action: {
+                showModal = true
+            }) {
                 Rectangle()
                     .fill(Color.clear)
                     .contentShape(Rectangle())
-                    .onTapGesture {
-                        showModal = true
-                        configureAudioSession(active: true)
-                    }
-            )
-            .task {
-                await setupPlayer()
             }
-            .onDisappear {
-                cleanupPlayer()
-                configureAudioSession(active: false)
-            }
-            .conditionalFullScreen(isPresented: $showModal) {
-                VideoPlayer(player: player)
-                    #if !os(macOS)
-                    .navigationTransition(.zoom(sourceID: videoURL, in: ns))
-                    #endif
-                    .ignoresSafeArea()
-                    .onDisappear {
-                        configureAudioSession(active: false)
-                    }
-            }
+            .buttonStyle(.plain)
+        )
+        .task {
+            await setupPlayer()
+        }
+        .onDisappear {
+            cleanupPlayer()
+        }
+        .conditionalFullScreen(isPresented: $showModal) {
+            VideoPlayer(player: player)
+                #if !os(macOS)
+                .navigationTransition(.zoom(sourceID: videoURL, in: ns))
+                #endif
+                .ignoresSafeArea()
+        }
     }
 
     private func setupPlayer() async {
         guard let url = URL(string: videoURL), player == nil else { return }
 
+        // Perform resource setup off the main actor/thread
         let asset = AVURLAsset(url: url)
         let playerItem = AVPlayerItem(asset: asset)
         playerItem.preferredPeakBitRate = 2_000_000
@@ -66,39 +70,77 @@ public struct SMVVideo: View {
         let queuePlayer = AVQueuePlayer(playerItem: playerItem)
         queuePlayer.isMuted = muteOnPlay
 
-        playerLooper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
-        player = queuePlayer
+        let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
 
-        if autoplay {
-            configureAudioSession(active: true)
-            queuePlayer.play()
+        await MainActor.run {
+            self.playerLooper = looper
+            self.player = queuePlayer
+
+            if autoplay {
+                queuePlayer.play()
+            }
         }
     }
 
     private func cleanupPlayer() {
-        player?.pause()
-        playerLooper?.disableLooping()
-        playerLooper = nil
-        player?.replaceCurrentItem(with: nil)
-        player = nil
-    }
-
-    private func configureAudioSession(active: Bool) {
-        #if os(iOS)
-        let audioSession = AVAudioSession.sharedInstance()
+        let oldPlayer = player
+        let oldLooper = playerLooper
         
-        do {
-            if active {
-                // Duck other audio (lowers volume of other apps)
-                try audioSession.setCategory(.playback, options: [.duckOthers, .mixWithOthers])
-                try audioSession.setActive(true)
-            } else {
-                // Restore other audio
-                try audioSession.setActive(false, options: .notifyOthersOnDeactivation)
+        player = nil
+        playerLooper = nil
+        
+        if let p = oldPlayer {
+            p.pause()
+            oldLooper?.disableLooping()
+            
+            // Perform slow player-item replacement off the main thread
+            Task.detached(priority: .background) {
+                p.replaceCurrentItem(with: nil)
             }
-        } catch {
-            print("Failed to configure audio session: \(error)")
         }
-        #endif
     }
 }
+
+#if !os(macOS)
+class SMVVideoPlayerUIView: UIView {
+    private let playerLayer = AVPlayerLayer()
+    
+    var player: AVPlayer? {
+        get { playerLayer.player }
+        set { playerLayer.player = newValue }
+    }
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .clear
+        playerLayer.videoGravity = .resizeAspect
+        layer.addSublayer(playerLayer)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        playerLayer.frame = bounds
+        CATransaction.commit()
+    }
+}
+
+struct SMVPlayerLayerView: UIViewRepresentable {
+    let player: AVPlayer?
+    
+    func makeUIView(context: Context) -> SMVVideoPlayerUIView {
+        let view = SMVVideoPlayerUIView()
+        view.player = player
+        return view
+    }
+    
+    func updateUIView(_ uiView: SMVVideoPlayerUIView, context: Context) {
+        uiView.player = player
+    }
+}
+#endif
