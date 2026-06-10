@@ -1,10 +1,10 @@
 # SwiftMediaViewer
 
-A lightweight SwiftUI package for presenting remote images and videos with optional fullscreen, thumbnails and simple caching.
+A lightweight SwiftUI package for presenting remote images and videos with optional fullscreen and thumbnails. Image loading and caching are handled by the system's `AsyncImage`, which applies standard HTTP caching automatically on the 2027 OS releases.
 
 Requirements
 - Swift tools version: 6.2
-- Platforms: iOS 18+, macOS 15+
+- Platforms: iOS 27+, macOS 27+, tvOS 27+
 
 Installation
 - Xcode: File > Add Packages... and add `https://github.com/SilverMarcs/SwiftMediaViewer.git`
@@ -21,7 +21,7 @@ Quick examples
 import SwiftUI
 import SwiftMediaViewer
 
-SMVImage(url: "https://example.com/image.jpg", targetSize: 600)
+SMVImage(url: "https://example.com/image.jpg")
 ```
 
 - Gallery with thumbnails:

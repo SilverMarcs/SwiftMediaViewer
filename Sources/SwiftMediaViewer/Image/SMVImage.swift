@@ -9,18 +9,16 @@ import SwiftUI
 
 public struct SMVImage: View {
     private let url: URL
-    private let targetSize: Int
 
     @Namespace private var imageNamespace
     @State private var showFullscreen = false
 
-    public init(url: URL, targetSize: Int) {
+    public init(url: URL) {
         self.url = url
-        self.targetSize = targetSize
     }
 
     public var body: some View {
-        CachedAsyncImage(url: url, targetSize: targetSize)
+        CachedAsyncImage(url: url)
             #if !os(macOS) && !os(tvOS)
             .matchedTransitionSource(id: url, in: imageNamespace)
             #endif
@@ -32,7 +30,6 @@ public struct SMVImage: View {
                 SMVImageModal(
                     urls: [url],
                     startIndex: 0,
-                    targetSize: targetSize,
                     namespace: imageNamespace
                 )
             }

@@ -9,23 +9,21 @@ import SwiftUI
 
 public struct SMVGallery: View {
     let images: [URL] // Just URLs
-    let targetSize: Int
-    
+
     @Namespace private var galleryNamespace
     @State private var showFullscreen = false
     @State private var startIndex = 0
     @State private var selectedIndex: Int? = nil
-    
-    public init(images: [URL], targetSize: Int = 600) {
+
+    public init(images: [URL]) {
         self.images = images
-        self.targetSize = targetSize
     }
     
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Main image (first image)
             if let firstURL = images.first {
-                CachedAsyncImage(url: firstURL, targetSize: targetSize)
+                CachedAsyncImage(url: firstURL)
                     .aspectRatio(contentMode: .fit)
                     .cornerRadius(12)
                     .clipped()
@@ -48,7 +46,7 @@ public struct SMVGallery: View {
                     ForEach(Array(displayImages.enumerated()), id: \.offset) { thumbIndex, imageURL in
                         let actualIndex = thumbIndex + 1 // +1 because we skipped first image
                         
-                        CachedAsyncImage(url: imageURL, targetSize: targetSize)
+                        CachedAsyncImage(url: imageURL)
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 80, height: 80)
                             .cornerRadius(8)
@@ -81,7 +79,6 @@ public struct SMVGallery: View {
             SMVImageModal(
                 urls: images,
                 startIndex: index,
-                targetSize: targetSize,
                 namespace: galleryNamespace
             )
         }

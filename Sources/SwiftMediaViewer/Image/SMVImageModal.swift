@@ -7,15 +7,13 @@ import SwiftUI
 public struct SMVImageModal: View {
     let urls: [URL]
     let startIndex: Int
-    let targetSize: Int
     let namespace: Namespace.ID
 
     @State private var currentIndex: Int
 
-    public init(urls: [URL], startIndex: Int = 0, targetSize: Int, namespace: Namespace.ID) {
+    public init(urls: [URL], startIndex: Int = 0, namespace: Namespace.ID) {
         self.urls = urls
         self.startIndex = min(max(0, startIndex), max(0, urls.count - 1))
-        self.targetSize = targetSize
         self.namespace = namespace
         self._currentIndex = State(initialValue: self.startIndex)
     }
@@ -28,7 +26,7 @@ public struct SMVImageModal: View {
      public var body: some View {
          #if os(macOS) || os(tvOS)
          if let currentURL = urls[safe: currentIndex] {
-             CachedAsyncImage(url: currentURL, targetSize: 50)
+             CachedAsyncImage(url: currentURL)
                  .zoomable()
                  .frame(maxWidth: .infinity)
                  .overlay {
@@ -63,7 +61,7 @@ public struct SMVImageModal: View {
          #else
          TabView(selection: $currentIndex) {
              ForEach(Array(urls.enumerated()), id: \.offset) { index, s in
-                 CachedAsyncImage(url: s, targetSize: targetSize)
+                 CachedAsyncImage(url: s)
                      .aspectRatio(contentMode: .fit)
                      .zoomable()
                      .tag(index)

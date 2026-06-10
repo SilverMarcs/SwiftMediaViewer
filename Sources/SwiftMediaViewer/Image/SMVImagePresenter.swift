@@ -19,23 +19,22 @@ public final class SMVImagePresenter {
     
     private init() {}
     
-    public func present(url: URL, targetSize: Int = 600) {
+    public func present(url: URL) {
         #if os(macOS)
-        presentMacOS(url: url, targetSize: targetSize)
+        presentMacOS(url: url)
         #else
-        presentIOS(url: url, targetSize: targetSize)
+        presentIOS(url: url)
         #endif
     }
-    
+
     #if os(macOS)
-    private func presentMacOS(url: URL, targetSize: Int) {
+    private func presentMacOS(url: URL) {
         guard let keyWindow = NSApplication.shared.keyWindow else {
             return
         }
-        
+
         let view = SMVImageModal(
             urls: [url],
-            targetSize: targetSize,
             namespace: Namespace().wrappedValue
         )
         
@@ -46,7 +45,7 @@ public final class SMVImagePresenter {
         presentedWindow = keyWindow
     }
     #else
-    private func presentIOS(url: URL, targetSize: Int) {
+    private func presentIOS(url: URL) {
         guard let windowScene = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
             .first(where: { $0.activationState == .foregroundActive }),
@@ -54,10 +53,9 @@ public final class SMVImagePresenter {
                 .rootViewController?.topMostViewController() else {
             return
         }
-        
+
         let view = SMVImageModal(
             urls: [url],
-            targetSize: targetSize,
             namespace: Namespace().wrappedValue
         )
         
