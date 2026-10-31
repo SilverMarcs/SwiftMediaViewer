@@ -23,8 +23,11 @@ class ImageLoader {
         do {
             let image: PlatformImage?
 
-            // Disk cache: original data by URL (hashing internal to DiskCache)
-            if let diskData = await DiskCache.shared.retrieve(for: url) {
+            if let source = SMVImageSources.loader(for: url) {
+                // The app's own source, which may change, so it skips the disk cache.
+                image = await loadImage(from: try await source(url, targetSize), maxPixelSize: targetSize)
+            } else if let diskData = await DiskCache.shared.retrieve(for: url) {
+                // Disk cache: original data by URL (hashing internal to DiskCache)
                 image = await loadImage(from: diskData, maxPixelSize: targetSize)
             } else {
                 // Download and persist

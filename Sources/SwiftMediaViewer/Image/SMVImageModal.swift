@@ -11,6 +11,7 @@ public struct SMVImageModal: View {
     let namespace: Namespace.ID
 
     @State private var currentIndex: Int
+    @Environment(\.dismiss) private var dismiss
 
     public init(urls: [URL], startIndex: Int = 0, targetSize: Int, namespace: Namespace.ID) {
         self.urls = urls
@@ -26,9 +27,24 @@ public struct SMVImageModal: View {
     }
 
      public var body: some View {
+         images
+             #if !os(tvOS)
+             .overlay(alignment: .topTrailing) {
+                 Button(role: .close) { dismiss() }
+                     .buttonStyle(.glass)
+                     .buttonBorderShape(.circle)
+                     .controlSize(.large)
+                     .keyboardShortcut(.cancelAction)
+                     .padding()
+             }
+             #endif
+     }
+
+     @ViewBuilder
+     private var images: some View {
          #if os(macOS) || os(tvOS)
          if let currentURL = urls[safe: currentIndex] {
-             CachedAsyncImage(url: currentURL, targetSize: 50)
+             CachedAsyncImage(url: currentURL, targetSize: targetSize)
                  .zoomable()
                  .frame(maxWidth: .infinity)
                  .overlay {
