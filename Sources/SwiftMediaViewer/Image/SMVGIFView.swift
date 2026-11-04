@@ -56,7 +56,10 @@ public struct SMVGIFView: View {
                     Image(systemName: "play.fill")
                         .imageScale(.large)
                         .padding()
+                        #if !os(visionOS)
+                        // Liquid Glass isn't available on visionOS.
                         .glassEffect(in: .circle)
+                        #endif
                         .foregroundStyle(.white)
                 }
             }
