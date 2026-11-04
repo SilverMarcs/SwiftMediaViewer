@@ -7,22 +7,29 @@
 
 import SwiftUI
 
+/// A lead image over a row of up to three thumbnails. Tapping any image opens
+/// the fullscreen viewer on the whole set.
 public struct SMVGallery: View {
     let images: [URL] // Just URLs
     let targetSize: Int
+    let alignment: HorizontalAlignment
     
     @Namespace private var galleryNamespace
     @State private var showFullscreen = false
     @State private var startIndex = 0
     @State private var selectedIndex: Int? = nil
     
-    public init(images: [URL], targetSize: Int = 600) {
+    /// - Parameter alignment: Which edge the lead image and the thumbnail row
+    ///   line up against when the gallery is wider than them, such as
+    ///   `.trailing` for an outgoing chat bubble.
+    public init(images: [URL], targetSize: Int = 600, alignment: HorizontalAlignment = .leading) {
         self.images = images
         self.targetSize = targetSize
+        self.alignment = alignment
     }
     
     public var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: alignment, spacing: 8) {
             // Main image (first image)
             if let firstURL = images.first {
                 CachedAsyncImage(url: firstURL, targetSize: targetSize)
