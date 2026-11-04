@@ -24,10 +24,21 @@ import SwiftMediaViewer
 SMVImage(url: "https://example.com/image.jpg", targetSize: 600)
 ```
 
-- Gallery with thumbnails:
+- Gallery: `SMVGallery` provides the fullscreen viewer and swiping between images; the inline layout is yours. Wrap each image in `SMVGalleryItem` so tapping it opens the viewer on that image:
 
 ```swift
-SMVGallery(images: ["https://.../1.jpg", "https://.../2.jpg", "https://.../3.jpg"])
+SMVGallery(images: urls, targetSize: 600) {
+    LazyVGrid(columns: [GridItem(), GridItem()]) {
+        ForEach(urls.indices, id: \.self) { index in
+            SMVGalleryItem(index: index) {
+                CachedAsyncImage(url: urls[index], targetSize: 600)
+                    .scaledToFill()
+                    .frame(height: 120)
+                    .clipped()
+            }
+        }
+    }
+}
 ```
 
 - Inline video view:

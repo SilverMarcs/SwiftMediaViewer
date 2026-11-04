@@ -1,5 +1,5 @@
 //
-//  SMVGalleryView.swift
+//  SMVGallery.swift
 //  SwiftMediaViewer
 //
 //  Created by Zabir Raihan on 25/09/2025.
@@ -7,90 +7,55 @@
 
 import SwiftUI
 
-/// A lead image over a row of up to three thumbnails. Tapping any image opens
-/// the fullscreen viewer on the whole set.
-public struct SMVGallery: View {
-    let images: [URL] // Just URLs
+/// A set of images that open in one fullscreen viewer, where the user swipes
+/// between them.
+///
+/// The gallery owns the viewer; the app owns the inline layout. Lay the
+/// images out however you like in `content`, and wrap each one in an
+/// ``SMVGalleryItem`` so tapping it opens the viewer on that image:
+///
+/// ```swift
+/// SMVGallery(images: urls) {
+///     LazyVGrid(columns: columns) {
+///         ForEach(urls.indices, id: \.self) { index in
+///             SMVGalleryItem(index: index) {
+///                 CachedAsyncImage(url: urls[index], targetSize: 600)
+///                     .scaledToFill()
+///             }
+///         }
+///     }
+/// }
+/// ```
+public struct SMVGallery<Content: View>: View {
+    let images: [URL]
     let targetSize: Int
-    let alignment: HorizontalAlignment
-    
+    let content: Content
+
     @Namespace private var galleryNamespace
-    @State private var showFullscreen = false
-    @State private var startIndex = 0
-    @State private var selectedIndex: Int? = nil
-    
-    /// - Parameter alignment: Which edge the lead image and the thumbnail row
-    ///   line up against when the gallery is wider than them, such as
-    ///   `.trailing` for an outgoing chat bubble.
-    public init(images: [URL], targetSize: Int = 600, alignment: HorizontalAlignment = .leading) {
+    @State private var selectedIndex: Int?
+
+    /// - Parameters:
+    ///   - images: Every image the viewer pages through, in order.
+    ///   - targetSize: The decode size, in pixels, for the viewer's images.
+    ///   - content: The inline layout. Wrap each image in an ``SMVGalleryItem``.
+    public init(images: [URL], targetSize: Int = 600, @ViewBuilder content: () -> Content) {
         self.images = images
         self.targetSize = targetSize
-        self.alignment = alignment
+        self.content = content()
     }
-    
+
     public var body: some View {
-        VStack(alignment: alignment, spacing: 8) {
-            // Main image (first image)
-            if let firstURL = images.first {
-                CachedAsyncImage(url: firstURL, targetSize: targetSize)
-                    .aspectRatio(contentMode: .fit)
-                    .cornerRadius(12)
-                    .clipped()
-#if !os(macOS) && !os(tvOS)
-                    .matchedTransitionSource(id: firstURL, in: galleryNamespace)
-#endif
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        selectedIndex = 0
-                    }
+        content
+            .environment(\.smvGalleryContext, SMVGalleryContext(images: images, namespace: galleryNamespace) { index in
+                selectedIndex = index
+            })
+            .conditionalFullScreen(item: $selectedIndex) { index in
+                SMVImageModal(
+                    urls: images,
+                    startIndex: index,
+                    targetSize: targetSize,
+                    namespace: galleryNamespace
+                )
             }
-            
-            // Thumbnails (remaining images)
-            if images.count > 1 {
-                let remainingImages = Array(images.dropFirst())
-                let displayImages = Array(remainingImages.prefix(3))
-                let remainingCount = remainingImages.count - displayImages.count
-                
-                HStack(spacing: 8) {
-                    ForEach(Array(displayImages.enumerated()), id: \.offset) { thumbIndex, imageURL in
-                        let actualIndex = thumbIndex + 1 // +1 because we skipped first image
-                        
-                        CachedAsyncImage(url: imageURL, targetSize: targetSize)
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 80, height: 80)
-                            .cornerRadius(8)
-                            .clipped()
-#if !os(macOS) && !os(tvOS)
-                            .matchedTransitionSource(id: imageURL, in: galleryNamespace)
-#endif
-                            .contentShape(Rectangle())
-                            .overlay {
-                                if thumbIndex == displayImages.count - 1 && remainingCount > 0 {
-                                    Rectangle()
-                                        .fill(.black.opacity(0.6))
-                                        .cornerRadius(8)
-                                        .overlay {
-                                            Text("+\(remainingCount)")
-                                                .font(.headline)
-                                                .fontWeight(.semibold)
-                                                .foregroundStyle(.white)
-                                        }
-                                }
-                            }
-                            .onTapGesture {
-                                selectedIndex = actualIndex
-                            }
-                    }
-                }
-            }
-        }
-        .conditionalFullScreen(item: $selectedIndex) { index in
-            SMVImageModal(
-                urls: images,
-                startIndex: index,
-                targetSize: targetSize,
-                namespace: galleryNamespace
-            )
-        }
     }
 }
