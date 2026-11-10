@@ -10,11 +10,9 @@ import SwiftUI
 public actor MemoryCache {
     public static let shared = MemoryCache()
 
-    #if os(macOS)
-    private var cache = NSCache<NSString, NSImage>()
-    #else
-    private var cache = NSCache<NSString, UIImage>()
-    #endif
+    /// `NSCache` is thread-safe, so views read it synchronously while they're
+    /// created; see `image(for:atLeast:)`.
+    private nonisolated(unsafe) let cache = NSCache<NSString, PlatformImage>()
 
     init() {
         cache.totalCostLimit = 1024 * 1024 * 50
@@ -48,6 +46,15 @@ public actor MemoryCache {
 
     func get(for url: URL) -> PlatformImage? {
         cache.object(forKey: cacheKey(for: url) as NSString)
+    }
+
+    /// The cached image for `url` when its longer side is at least
+    /// `targetSize` pixels, without waiting on the actor. A view that already
+    /// has its image shows it in its first frame instead of a placeholder.
+    nonisolated func image(for url: URL, atLeast targetSize: Int) -> PlatformImage? {
+        guard let image = cache.object(forKey: cacheKey(for: url) as NSString),
+              image.pixelMaxDimension >= targetSize else { return nil }
+        return image
     }
 
     public func clearCache() {

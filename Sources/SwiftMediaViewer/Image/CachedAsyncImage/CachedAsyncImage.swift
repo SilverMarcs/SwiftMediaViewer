@@ -13,11 +13,9 @@ public struct CachedAsyncImage<Placeholder: View>: View {
     let targetSize: Int
     let placeholder: () -> Placeholder
 
-    #if os(macOS)
-    @State private var image: NSImage?
-    #else
-    @State private var image: UIImage?
-    #endif
+    @State private var image: PlatformImage?
+    /// The URL `image` shows, so a cached image isn't loaded a second time.
+    @State private var loadedURL: URL?
 
     public init(
         url: URL?,
@@ -27,13 +25,20 @@ public struct CachedAsyncImage<Placeholder: View>: View {
         self.url = url
         self.targetSize = targetSize
         self.placeholder = placeholder
+        // Lazy stacks recreate a row's state each time it scrolls back into
+        // view. Starting from the memory cache shows the image in the first
+        // frame, instead of a placeholder and a second render once an async
+        // lookup returns.
+        let cached = url.flatMap { MemoryCache.shared.image(for: $0, atLeast: targetSize) }
+        _image = State(initialValue: cached)
+        _loadedURL = State(initialValue: cached == nil ? nil : url)
     }
 
     // Default placeholder
     public init(url: URL?, targetSize: Int) where Placeholder == Color {
-        self.url = url
-        self.targetSize = targetSize
-        self.placeholder = { Color(.darkGray).opacity(0.1) }
+        self.init(url: url, targetSize: targetSize) {
+            Color(.darkGray).opacity(0.1)
+        }
     }
 
     public var body: some View {
@@ -49,11 +54,20 @@ public struct CachedAsyncImage<Placeholder: View>: View {
             }
         }
         .task(id: url) {
-            if let validURL = url {
-                image = try? await ImageLoader.loadAndGetImage(url: validURL, targetSize: targetSize)
-            } else {
+            guard let url else {
                 image = nil
+                loadedURL = nil
+                return
             }
+            if loadedURL == url, image != nil { return }
+            if let cached = MemoryCache.shared.image(for: url, atLeast: targetSize) {
+                image = cached
+                loadedURL = url
+                return
+            }
+            let loaded = try? await ImageLoader.loadAndGetImage(url: url, targetSize: targetSize)
+            image = loaded
+            loadedURL = loaded == nil ? nil : url
         }
     }
 }

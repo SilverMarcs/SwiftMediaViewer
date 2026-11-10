@@ -13,8 +13,7 @@ class ImageLoader {
         // Try memory cache first
         if let cachedImage = await MemoryCache.shared.get(for: url) {
             // Optional upgrade: re-decode if cached is smaller than requested.
-            let cachedMax = pixelMaxDimension(of: cachedImage)
-            if cachedMax >= targetSize {
+            if cachedImage.pixelMaxDimension >= targetSize {
                 return cachedImage
             }
             // else continue to decode a larger version and replace
@@ -80,22 +79,4 @@ class ImageLoader {
             #endif
         }.value
     }
-
-    // Helpers
-
-    #if os(macOS)
-    private static func pixelMaxDimension(of image: NSImage) -> Int {
-        if let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-            return max(cg.width, cg.height)
-        }
-        let approx = max(Int(image.size.width), Int(image.size.height)) * 2
-        return approx
-    }
-    #else
-    private static func pixelMaxDimension(of image: UIImage) -> Int {
-        let w = image.size.width * image.scale
-        let h = image.size.height * image.scale
-        return Int(max(w, h))
-    }
-    #endif
 }
