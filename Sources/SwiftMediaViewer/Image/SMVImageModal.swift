@@ -42,6 +42,8 @@ public struct SMVImageModal: View {
                                  .controlSize(.extraLarge)
                                  .buttonStyle(.glass)
                                  .buttonBorderShape(.circle)
+                                 // Arrow keys page through the images in the sheet.
+                                 .keyboardShortcut(.leftArrow, modifiers: [])
                                  #endif
                                  .disabled(currentIndex == 0)
                              
@@ -54,6 +56,8 @@ public struct SMVImageModal: View {
                                  .controlSize(.extraLarge)
                                  .buttonStyle(.glass)
                                  .buttonBorderShape(.circle)
+                                 // Arrow keys page through the images in the sheet.
+                                 .keyboardShortcut(.rightArrow, modifiers: [])
                                  #endif
                                  .disabled(currentIndex == urls.count - 1)
                          }
