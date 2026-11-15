@@ -29,6 +29,7 @@ import SwiftUI
 public struct SMVGallery<Content: View>: View {
     let images: [URL]
     let targetSize: Int
+    let showsPageIndicator: Bool
     let content: Content
 
     @Namespace private var galleryNamespace
@@ -37,10 +38,12 @@ public struct SMVGallery<Content: View>: View {
     /// - Parameters:
     ///   - images: Every image the viewer pages through, in order.
     ///   - targetSize: The decode size, in pixels, for the viewer's images.
+    ///   - showsPageIndicator: Whether the fullscreen viewer shows page dots. Defaults to `true`.
     ///   - content: The inline layout. Wrap each image in an ``SMVGalleryItem``.
-    public init(images: [URL], targetSize: Int = 600, @ViewBuilder content: () -> Content) {
+    public init(images: [URL], targetSize: Int = 600, showsPageIndicator: Bool = true, @ViewBuilder content: () -> Content) {
         self.images = images
         self.targetSize = targetSize
+        self.showsPageIndicator = showsPageIndicator
         self.content = content()
     }
 
@@ -54,7 +57,8 @@ public struct SMVGallery<Content: View>: View {
                     urls: images,
                     startIndex: index,
                     targetSize: targetSize,
-                    namespace: galleryNamespace
+                    namespace: galleryNamespace,
+                    showsPageIndicator: showsPageIndicator
                 )
             }
     }

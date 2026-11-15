@@ -9,14 +9,17 @@ public struct SMVImageModal: View {
     let startIndex: Int
     let targetSize: Int
     let namespace: Namespace.ID
+    let showsPageIndicator: Bool
 
     @State private var currentIndex: Int
 
-    public init(urls: [URL], startIndex: Int = 0, targetSize: Int, namespace: Namespace.ID) {
+    /// - Parameter showsPageIndicator: Whether the paged viewer shows page dots. Defaults to `true`.
+    public init(urls: [URL], startIndex: Int = 0, targetSize: Int, namespace: Namespace.ID, showsPageIndicator: Bool = true) {
         self.urls = urls
         self.startIndex = min(max(0, startIndex), max(0, urls.count - 1))
         self.targetSize = targetSize
         self.namespace = namespace
+        self.showsPageIndicator = showsPageIndicator
         self._currentIndex = State(initialValue: self.startIndex)
     }
 
@@ -75,7 +78,7 @@ public struct SMVImageModal: View {
              }
          }
          .ignoresSafeArea()
-         .tabViewStyle(.page)
+         .tabViewStyle(.page(indexDisplayMode: showsPageIndicator ? .automatic : .never))
          .navigationTransition(.zoom(sourceID: sourceID, in: namespace))
          #endif
      }

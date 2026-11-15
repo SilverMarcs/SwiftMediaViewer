@@ -41,6 +41,11 @@ SMVGallery(images: urls, targetSize: 600) {
 }
 ```
 
+Page dots are shown by default. Pass `showsPageIndicator: false` to `SMVGallery`
+to hide them while keeping swipe navigation. `SMVImageModal` accepts the same
+option for direct presentation. This option has no effect on macOS or tvOS,
+which use previous/next buttons instead of page dots.
+
 - Inline video view:
 
 ```swift
