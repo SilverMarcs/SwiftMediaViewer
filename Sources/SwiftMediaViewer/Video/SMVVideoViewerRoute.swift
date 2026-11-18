@@ -5,23 +5,25 @@
 
 import SwiftUI
 
-/// The navigation value for one opening of the custom video viewer.
+/// One opening of the custom video viewer.
 ///
-/// Append it to a `NavigationStack` path that has `.smvVideoViewerDestination()`.
-/// `SMVVideo` with `viewer: .custom(...)` makes these for you; build one
-/// directly to open the viewer from your own thumbnail or button.
-public struct SMVVideoViewerRoute: Hashable {
+/// Present it with `.smvVideoViewer(item:)`. `SMVVideo` with `viewer: .custom(...)`
+/// makes and presents these for you; build one directly to open the viewer
+/// from your own thumbnail or button.
+public struct SMVVideoViewerRoute: Identifiable, Hashable {
     let link: SMVVideoViewerLink
     let namespace: Namespace.ID?
+
+    public var id: ObjectIdentifier { ObjectIdentifier(link) }
 
     /// Opens the viewer at `item`, with `feed`'s videos below it.
     ///
     /// - Parameters:
     ///   - item: The first video.
-    ///   - feed: Called once when the page opens. Pass `nil` for a single video.
+    ///   - feed: Called once when the viewer opens. Pass `nil` for a single video.
     ///   - sourceID: Zooms out of the view marked with
     ///     `.matchedTransitionSource(id: sourceID, in: namespace)`. Without it the
-    ///     page is pushed normally.
+    ///     viewer slides up as a plain full-screen cover.
     ///   - namespace: The namespace for `sourceID`.
     @MainActor
     public init(

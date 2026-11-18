@@ -17,9 +17,9 @@ final class SMVVideoViewerLink {
     /// A player already showing `initialItem`, reused so page 0 doesn't reload.
     var player: AVPlayer?
     var makeFeed: (@MainActor () -> any SMVVideoFeed)?
-    /// The zoom transition's source ID, or `nil` for a plain push.
+    /// The zoom transition's source ID, or `nil` for a plain cover.
     var sourceID: String?
-    /// Whether a viewer page from this link is on screen or being pushed.
+    /// Whether a viewer from this link is on screen or being presented.
     var isPresented = false
 
     init(initialItem: SMVVideoItem, player: AVPlayer? = nil,

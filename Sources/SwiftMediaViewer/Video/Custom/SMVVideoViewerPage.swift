@@ -6,10 +6,11 @@
 #if os(iOS)
 import SwiftUI
 
-/// The pushed navigation page that hosts the custom viewer.
+/// The full-screen cover that hosts the custom viewer.
 ///
-/// It zooms out of its source when it has one, and hides the bars, so the
-/// system's back and zoom gestures are the way out.
+/// It zooms out of its source when it has one, so the zoom transition's swipe
+/// and pinch are the way out. Being a cover, it leaves the app's navigation
+/// and tab bars untouched underneath.
 struct SMVVideoViewerPage<Overlay: View>: View {
     let route: SMVVideoViewerRoute
     let scrubber: SMVVideoScrubberMode
@@ -34,7 +35,6 @@ struct SMVVideoViewerPage<Overlay: View>: View {
     var body: some View {
         SMVCustomVideoViewer(model: model, scrubber: scrubber, overlay: overlay)
             .modifier(SMVZoomTransition(sourceID: route.link.sourceID, namespace: route.namespace))
-            .toolbar(.hidden, for: .navigationBar, .tabBar)
             .onAppear {
                 route.link.isPresented = true
             }

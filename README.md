@@ -56,54 +56,52 @@ Tapping the video opens AVKit's player by default (`viewer: .native`).
 
 ### Custom video viewer (iOS)
 
-An endless, vertically paging video viewer, pushed onto your own
-`NavigationStack` with a zoom transition. It draws only the video; you choose
-whether it has a scrubber and overlay anything else yourself.
+An endless, vertically paging video viewer, presented as a full-screen cover
+that zooms out of the tapped video. Your navigation and tab bars stay as they
+are underneath. It draws only the video; you choose whether it has a scrubber
+and overlay anything else yourself.
 
 - Single tap: show or hide the controls.
 - Double-tap the center: play or pause.
 - Double-tap the left or right edge: skip 5 seconds (keep tapping to add more).
 - Hold an edge: play at 2× until you let go.
-- Swipe up or down: next or previous video. Swipe right, or down on the first
-  video, to close. The volume buttons control the sound.
+- Swipe up or down: next or previous video. Swipe down on the first video, or
+  pinch in, to close. The volume buttons control the sound.
 
 Only the current video holds a player. Each video loads when you swipe to it, and the previous one is released.
 
-**1. Register the destination** once per stack:
+**1. Open it** from an inline video (reuses its player and zooms out of it):
 
 ```swift
-NavigationStack(path: $path) {
-    content
-        .smvVideoViewerDestination(scrubber: .withControls) { page in
-            // Optional: your own content per page, laid out above the scrubber.
-            if page.isShowingControls {
-                SaveButton(id: page.item.id)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-            }
-        }
-}
+SMVVideo(videoURL: url, viewer: .custom(itemID: post.id, scrubber: .withControls,
+                                        feed: { MyVideoFeed() }) { page in
+    // Optional: your own content per page, laid out above the scrubber.
+    if page.isShowingControls {
+        SaveButton(id: page.item.id)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+    }
+})
 ```
 
 `scrubber` is `.withControls` (line shown with the controls, always draggable),
 `.always`, or `.none`. The overlay closure gets an `SMVVideoPageContext`
 (`item`, `isCurrent`, `isShowingControls`); empty space passes touches through.
 
-**2. Open it**, from an inline video (reuses its player and zooms out of it):
+or from anything else, by presenting a route:
 
 ```swift
-SMVVideo(videoURL: url, viewer: .custom(itemID: post.id, feed: { MyVideoFeed() },
-                                        open: { path.append($0) }))
+@State private var route: SMVVideoViewerRoute?
+
+content
+    .smvVideoViewer(item: $route, scrubber: .withControls) { page in /* overlay */ }
+
+// To open (the zoom source is optional):
+route = SMVVideoViewerRoute(item: SMVVideoItem(id: post.id, url: videoURL),
+                            feed: { MyVideoFeed() },
+                            sourceID: post.id, namespace: ns)
 ```
 
-or from anything else:
-
-```swift
-path.append(SMVVideoViewerRoute(item: SMVVideoItem(id: post.id, url: videoURL),
-                                feed: { MyVideoFeed() },
-                                sourceID: post.id, namespace: ns)) // zoom source optional
-```
-
-**3. Supply more videos** (optional) with an `SMVVideoFeed`. The viewer asks
+**2. Supply more videos** (optional) with an `SMVVideoFeed`. The viewer asks
 when the person nears the end, never twice at once, drops duplicates, and stops
 when you return `[]`. The closure runs on every opening, so state starts fresh.
 

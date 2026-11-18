@@ -23,8 +23,10 @@ public struct SMVVideo: View {
     /// Rewinds the single item at its end. Cheaper than `AVPlayerLooper`,
     /// which keeps several copies of the item decoding while a list scrolls.
     @State private var looping: Task<Void, Never>?
-    /// Ties this video to the custom viewer page it opens.
+    /// Ties this video to the custom viewer it opens.
     @State private var viewerLink: SMVVideoViewerLink?
+    /// The custom viewer's open presentation, or `nil` while it's closed.
+    @State private var viewerRoute: SMVVideoViewerRoute?
     /// Set once the video has really played, after which the poster is removed.
     @State private var hasStartedPlaying = false
     /// Whether most of the video is on screen, as its scroll view reports it.
@@ -101,10 +103,11 @@ public struct SMVVideo: View {
             await updateAutoplay()
         }
         .onDisappear {
-            // Behind an open viewer page, the page is still playing this player.
+            // Behind an open viewer, the viewer is still playing this player.
             guard viewerLink?.isPresented != true else { return }
             cleanupPlayer()
         }
+        .smvVideoViewer(item: $viewerRoute, scrubber: viewer.scrubber) { viewer.overlay($0) }
         .conditionalFullScreen(isPresented: $showModal) {
             VideoPlayer(player: player)
                 #if !os(macOS)
@@ -114,21 +117,21 @@ public struct SMVVideo: View {
         }
     }
 
-    /// Pushes the custom viewer page. Returns `false` when this video uses the
+    /// Presents the custom viewer. Returns `false` when this video uses the
     /// native viewer, or on platforms without the custom one.
     private func openCustomViewer() -> Bool {
         #if os(iOS)
-        guard let open = viewer.open, let url = URL(string: videoURL) else { return false }
+        guard viewer.isCustom, let url = URL(string: videoURL) else { return false }
         let item = SMVVideoItem(id: viewer.itemID ?? videoURL, url: url)
         let link = viewerLink ?? SMVVideoViewerLink(initialItem: item)
         link.initialItem = item
         link.player = player
         link.makeFeed = viewer.makeFeed
         link.sourceID = videoURL
-        // Set before pushing, so this view's disappearance keeps the player.
+        // Set before presenting, so autoplay leaves the player to the viewer.
         link.isPresented = true
         viewerLink = link
-        open(SMVVideoViewerRoute(link: link, namespace: ns))
+        viewerRoute = SMVVideoViewerRoute(link: link, namespace: ns)
         return true
         #else
         return false

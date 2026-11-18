@@ -10,8 +10,8 @@ import SwiftUI
 /// gesture controls, an optional scrubber and the app's overlay on each page.
 ///
 /// Page 0 is the opened video. With a feed, swiping up shows the next video
-/// and swiping down the previous one. It's pushed as a navigation page, so the
-/// system back and zoom gestures close it; the hardware buttons set the volume.
+/// and swiping down the previous one. It is a full-screen cover, so the
+/// zoom transition's swipe and pinch close it; the hardware buttons set the volume.
 struct SMVCustomVideoViewer<Overlay: View>: View {
     @Bindable var model: SMVVideoViewerModel
     let scrubber: SMVVideoScrubberMode
