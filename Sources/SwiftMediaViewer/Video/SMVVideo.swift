@@ -10,19 +10,44 @@ import AVKit
 
 public struct SMVVideo: View {
     let videoURL: String
+    let thumbnailURL: URL?
     let autoplay: Bool
+    let autoplayDelay: Duration
     let muteOnPlay: Bool
+    let viewer: SMVVideoViewer
 
     @Namespace private var ns
 
     @State private var showModal = false
     @State private var player: AVPlayer?
-    @State private var playerLooper: AVPlayerLooper?
+    /// Rewinds the single item at its end. Cheaper than `AVPlayerLooper`,
+    /// which keeps several copies of the item decoding while a list scrolls.
+    @State private var looping: Task<Void, Never>?
+    /// Ties this video to the custom viewer page it opens.
+    @State private var viewerLink: SMVVideoViewerLink?
+    /// Set once the video has really played, after which the poster is removed.
+    @State private var hasStartedPlaying = false
 
-    public init(videoURL: String, autoplay: Bool = true, muteOnPlay: Bool = true) {
+    /// - Parameters:
+    ///   - videoURL: The video to play inline and fullscreen.
+    ///   - thumbnailURL: A poster kept behind the video, so it starts on the
+    ///     poster instead of a blank box, and any moment the player draws nothing
+    ///     (before its first frame, or briefly as playback starts) shows the
+    ///     poster rather than the background. Use a frame of the video itself.
+    ///   - autoplay: Whether the inline video starts playing on its own.
+    ///   - autoplayDelay: How long a visible video waits before autoplaying. The
+    ///     player loads at once; the wait only skips videos scrolled straight past.
+    ///   - muteOnPlay: Whether the inline video starts muted.
+    ///   - viewer: The fullscreen viewer a tap opens. Defaults to `.native`.
+    ///     The custom viewer is iOS-only; elsewhere it falls back to `.native`.
+    public init(videoURL: String, thumbnailURL: URL? = nil, autoplay: Bool = true,
+                autoplayDelay: Duration = .zero, muteOnPlay: Bool = true, viewer: SMVVideoViewer = .native) {
         self.videoURL = videoURL
+        self.thumbnailURL = thumbnailURL
         self.autoplay = autoplay
+        self.autoplayDelay = autoplayDelay
         self.muteOnPlay = muteOnPlay
+        self.viewer = viewer
     }
 
     public var body: some View {
@@ -33,9 +58,25 @@ public struct SMVVideo: View {
             SMVPlayerLayerView(player: player)
             #endif
         }
+        // The player layer is clear wherever it has no frame, so the poster
+        // behind it shows through until the video covers it.
+        .background {
+            if let thumbnailURL, !hasStartedPlaying {
+                CachedAsyncImage(url: thumbnailURL, targetSize: 600) {
+                    Color.clear
+                }
+                .scaledToFit()
+            }
+        }
         .matchedGeometryEffect(id: videoURL, in: ns)
+        #if os(iOS)
+        .matchedTransitionSource(id: videoURL, in: ns)
+        #endif
         .overlay(
             Button(action: {
+                #if os(iOS)
+                if openCustomViewer() { return }
+                #endif
                 showModal = true
             }) {
                 Rectangle()
@@ -48,6 +89,8 @@ public struct SMVVideo: View {
             await setupPlayer()
         }
         .onDisappear {
+            // Behind an open viewer page, the page is still playing this player.
+            guard viewerLink?.isPresented != true else { return }
             cleanupPlayer()
         }
         .conditionalFullScreen(isPresented: $showModal) {
@@ -59,44 +102,65 @@ public struct SMVVideo: View {
         }
     }
 
+    /// Pushes the custom viewer page. Returns `false` when this video uses the
+    /// native viewer, or on platforms without the custom one.
+    private func openCustomViewer() -> Bool {
+        #if os(iOS)
+        guard let open = viewer.open, let url = URL(string: videoURL) else { return false }
+        let item = SMVVideoItem(id: viewer.itemID ?? videoURL, url: url)
+        let link = viewerLink ?? SMVVideoViewerLink(initialItem: item)
+        link.initialItem = item
+        link.player = player
+        link.makeFeed = viewer.makeFeed
+        link.sourceID = videoURL
+        // Set before pushing, so this view's disappearance keeps the player.
+        link.isPresented = true
+        viewerLink = link
+        open(SMVVideoViewerRoute(link: link, namespace: ns))
+        return true
+        #else
+        return false
+        #endif
+    }
+
     private func setupPlayer() async {
         guard let url = URL(string: videoURL), player == nil else { return }
 
-        // Perform resource setup off the main actor/thread
-        let asset = AVURLAsset(url: url)
-        let playerItem = AVPlayerItem(asset: asset)
-        playerItem.preferredPeakBitRate = 2_000_000
+        let (newPlayer, item) = SMVPlayerLoop.makePlayer(url: url, preferredPeakBitRate: 2_000_000)
+        newPlayer.isMuted = muteOnPlay
+        player = newPlayer
+        looping = SMVPlayerLoop.loop(item, on: newPlayer)
 
-        let queuePlayer = AVQueuePlayer(playerItem: playerItem)
-        queuePlayer.isMuted = muteOnPlay
-
-        let looper = AVPlayerLooper(player: queuePlayer, templateItem: playerItem)
-
-        await MainActor.run {
-            self.playerLooper = looper
-            self.player = queuePlayer
-
-            if autoplay {
-                queuePlayer.play()
+        guard autoplay else { return }
+        // Cancelled with this task when the view leaves the screen.
+        do {
+            try await Task.sleep(for: autoplayDelay)
+        } catch {
+            return
+        }
+        guard player === newPlayer else { return }
+        newPlayer.play()
+        // Drop the poster only once playback has visibly moved on.
+        while !Task.isCancelled, player === newPlayer {
+            if newPlayer.timeControlStatus == .playing,
+               newPlayer.currentTime().seconds > SMVPlayerLoop.posterHideTime {
+                hasStartedPlaying = true
+                return
             }
+            try? await Task.sleep(for: .milliseconds(100))
         }
     }
 
     private func cleanupPlayer() {
-        let oldPlayer = player
-        let oldLooper = playerLooper
-        
+        hasStartedPlaying = false
+        looping?.cancel()
+        looping = nil
+        guard let oldPlayer = player else { return }
         player = nil
-        playerLooper = nil
-        
-        if let p = oldPlayer {
-            p.pause()
-            oldLooper?.disableLooping()
-            
-            // Perform slow player-item replacement off the main thread
-            Task.detached(priority: .background) {
-                p.replaceCurrentItem(with: nil)
-            }
+        oldPlayer.pause()
+        // Emptying a player can be slow, so keep it off the main thread.
+        Task.detached(priority: .background) {
+            oldPlayer.replaceCurrentItem(with: nil)
         }
     }
 }
