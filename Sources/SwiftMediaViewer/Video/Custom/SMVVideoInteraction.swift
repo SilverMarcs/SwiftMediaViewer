@@ -13,8 +13,8 @@ import Observation
 /// - A double-tap in the center plays or pauses.
 /// - A double-tap on an edge skips 5 s and starts a run, during which every
 ///   further tap on that side adds another 5 s (YouTube-style).
-/// - Holding an edge plays at 2× until release, and the tap that ends the
-///   hold is ignored.
+/// - Holding the trailing edge plays at 2× until release; holding the leading
+///   edge runs backwards at 2×. The tap that ends a hold is ignored.
 ///
 /// The edges recognise double-taps with the system's `TapGesture(count: 2)`;
 /// counting taps by hand dropped the second tap of quick double-taps.
@@ -98,12 +98,17 @@ final class SMVVideoInteraction {
 
     // MARK: Holds
 
-    /// Starts 2× playback once a hold on an edge is recognised.
-    func beginHold(playback: SMVVideoPlayback?) {
-        guard let playback, !isHolding else { return }
+    /// Starts 2× playback once a hold on an edge is recognised: forwards on
+    /// the trailing edge, backwards on the leading one.
+    func beginHold(in zone: SMVVideoTapZone, playback: SMVVideoPlayback?) {
+        guard let playback, zone.isEdge, !isHolding else { return }
         endSkipRun()
         isHolding = true
-        playback.beginFastForward()
+        if zone == .leading {
+            playback.beginRewind()
+        } else {
+            playback.beginFastForward()
+        }
     }
 
     /// Returns to normal speed when the finger lifts or the hold is cancelled.

@@ -36,13 +36,23 @@ final class SMVVideoPlayback {
     /// Where a scrub or seek is heading. Shown instead of `currentTime` so
     /// periodic time updates don't fight the scrubber.
     private(set) var targetTime: Double?
-    /// The person's latest skip, pause, resume or hold, for showing and hiding the controls.
+    /// The person's latest pause or resume, for showing and hiding the controls.
     private(set) var lastActivity: SMVVideoPlaybackActivity?
+    /// Whether the progress line is showing after a skip, scrub or hold: from
+    /// the skip until a short moment after it lands, or a short moment after
+    /// a scrub or hold ends.
+    private(set) var isFlashingProgress = false
+    /// How long the progress line lingers once a skip, scrub or hold ends.
+    static let progressLinger: Duration = .milliseconds(500)
+    @ObservationIgnored private var progressLingerTask: Task<Void, Never>?
 
     @ObservationIgnored private var looping: Task<Void, Never>?
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var resumesAfterScrub = false
     @ObservationIgnored private var resumesAfterFastForward = false
+    /// Steps the playhead back while a hold on the leading edge lasts, for
+    /// streams that can't play in reverse.
+    @ObservationIgnored private var rewindTask: Task<Void, Never>?
     @ObservationIgnored private var seekGeneration = 0
     @ObservationIgnored private var isReleased = false
 
@@ -110,21 +120,47 @@ final class SMVVideoPlayback {
     /// Plays at 2× until `endFastForward()`, starting playback if it was paused.
     func beginFastForward() {
         guard !isReleased, !isFastForwarding else { return }
-        recordActivity(.adjusted)
         resumesAfterFastForward = isPlaying
         isFastForwarding = true
         player.rate = 2
         isPlaying = true
     }
 
+    /// Runs backwards at 2× until `endFastForward()`, then resumes or stays paused.
+    ///
+    /// Plays in reverse where the item allows it; most streams don't, so it
+    /// otherwise steps the playhead back half a second every quarter second.
+    func beginRewind() {
+        guard !isReleased, !isFastForwarding else { return }
+        resumesAfterFastForward = isPlaying
+        isFastForwarding = true
+        if player.currentItem?.canPlayFastReverse == true {
+            player.rate = -2
+            isPlaying = true
+            return
+        }
+        player.pause()
+        isPlaying = false
+        rewindTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self, displayTime > 0 else { return }
+                seek(to: displayTime - 0.5, precise: false)
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+        }
+    }
+
     /// Returns to 1×, or pauses again if playback was paused before the hold.
     func endFastForward() {
         guard isFastForwarding else { return }
         isFastForwarding = false
-        recordActivity(.adjusted)
+        rewindTask?.cancel()
+        rewindTask = nil
         guard !isReleased else { return }
+        lingerProgress()
         if resumesAfterFastForward {
             player.rate = 1
+            isPlaying = true
         } else {
             pause()
         }
@@ -135,8 +171,20 @@ final class SMVVideoPlayback {
     /// Seeks precisely by `delta` seconds from the current target, so quick
     /// repeated skips add up rather than restarting from a stale playhead.
     func skip(by delta: Double) {
+        progressLingerTask?.cancel()
+        isFlashingProgress = true
         seek(to: displayTime + delta, precise: true)
-        recordActivity(.adjusted)
+    }
+
+    /// Keeps the progress line up for `progressLinger`, then hides it.
+    private func lingerProgress() {
+        isFlashingProgress = true
+        progressLingerTask?.cancel()
+        progressLingerTask = Task { [weak self] in
+            try? await Task.sleep(for: Self.progressLinger)
+            guard !Task.isCancelled, let self else { return }
+            isFlashingProgress = false
+        }
     }
 
     /// Pauses playback for a scrub, remembering whether to resume afterwards.
@@ -160,6 +208,7 @@ final class SMVVideoPlayback {
         isScrubbing = false
         seek(to: displayTime, precise: true)
         if resumesAfterScrub { play() }
+        lingerProgress()
     }
 
     private func seek(to seconds: Double, precise: Bool) {
@@ -188,6 +237,7 @@ final class SMVVideoPlayback {
         guard generation == seekGeneration, !isScrubbing else { return }
         currentTime = target
         targetTime = nil
+        if isFlashingProgress { lingerProgress() }
     }
 
     // MARK: Lifecycle
@@ -198,9 +248,13 @@ final class SMVVideoPlayback {
         guard !isReleased else { return }
         if isFastForwarding {
             isFastForwarding = false
+            rewindTask?.cancel()
+            rewindTask = nil
             player.rate = 1
         }
         pause()
+        progressLingerTask?.cancel()
+        isFlashingProgress = false
         isReleased = true
         if let timeObserver {
             player.removeTimeObserver(timeObserver)

@@ -124,7 +124,7 @@ final class SMVVideoViewerModel {
         }
     }
 
-    /// Shows the controls after a skip, pause or hold; a resume hides them at once.
+    /// Shows the controls after a pause; a resume hides them at once.
     /// Either way, a tap or the auto-hide timer takes them away afterwards.
     func playbackActivityDidChange(_ activity: SMVVideoPlaybackActivity?) {
         guard let activity, !isTornDown else { return }

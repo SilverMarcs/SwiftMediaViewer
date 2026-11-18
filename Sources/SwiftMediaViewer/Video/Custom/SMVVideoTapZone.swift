@@ -7,7 +7,7 @@
 /// A strip of the custom viewer's page, which decides what taps and holds do.
 /// The edges take a quarter of the width each and the center the half between.
 enum SMVVideoTapZone: CaseIterable, Sendable {
-    /// Double-tap skips back; hold plays at 2×.
+    /// Double-tap skips back; hold runs backwards at 2×.
     case leading
     /// Double-tap plays or pauses.
     case center

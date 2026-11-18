@@ -27,6 +27,12 @@ public struct SMVVideo: View {
     @State private var viewerLink: SMVVideoViewerLink?
     /// Set once the video has really played, after which the poster is removed.
     @State private var hasStartedPlaying = false
+    /// Whether most of the video is on screen, as its scroll view reports it.
+    /// `nil` until a scroll view reports, or always outside one.
+    @State private var isMostlyVisible: Bool?
+
+    /// How much of the video must be on screen for it to autoplay. Below this it pauses.
+    static let autoplayVisibleFraction = 0.6
 
     /// - Parameters:
     ///   - videoURL: The video to play inline and fullscreen.
@@ -34,8 +40,10 @@ public struct SMVVideo: View {
     ///     poster instead of a blank box, and any moment the player draws nothing
     ///     (before its first frame, or briefly as playback starts) shows the
     ///     poster rather than the background. Use a frame of the video itself.
-    ///   - autoplay: Whether the inline video starts playing on its own.
-    ///   - autoplayDelay: How long a visible video waits before autoplaying. The
+    ///   - autoplay: Whether the inline video plays on its own while at least 60%
+    ///     of it is on screen in its scroll view. It pauses below that and resumes
+    ///     when scrolled back. Outside a scroll view it plays once it appears.
+    ///   - autoplayDelay: How long a mostly visible video waits before autoplaying. The
     ///     player loads at once; the wait only skips videos scrolled straight past.
     ///   - muteOnPlay: Whether the inline video starts muted.
     ///   - viewer: The fullscreen viewer a tap opens. Defaults to `.native`.
@@ -85,8 +93,12 @@ public struct SMVVideo: View {
             }
             .buttonStyle(.plain)
         )
-        .task {
-            await setupPlayer()
+        .onScrollVisibilityChange(threshold: Self.autoplayVisibleFraction) { visible in
+            isMostlyVisible = visible
+        }
+        // Restarts whenever visibility changes, so it plays or pauses to match.
+        .task(id: isMostlyVisible) {
+            await updateAutoplay()
         }
         .onDisappear {
             // Behind an open viewer page, the page is still playing this player.
@@ -123,32 +135,40 @@ public struct SMVVideo: View {
         #endif
     }
 
-    private func setupPlayer() async {
-        guard let url = URL(string: videoURL), player == nil else { return }
-
-        let (newPlayer, item) = SMVPlayerLoop.makePlayer(url: url, preferredPeakBitRate: 2_000_000)
-        newPlayer.isMuted = muteOnPlay
-        player = newPlayer
-        looping = SMVPlayerLoop.loop(item, on: newPlayer)
-
-        guard autoplay else { return }
-        // Cancelled with this task when the view leaves the screen.
+    /// Loads the player once, then plays it while mostly visible and pauses it otherwise.
+    private func updateAutoplay() async {
+        setupPlayer()
+        // Behind an open viewer page, the page is driving this player.
+        guard autoplay, let current = player, viewerLink?.isPresented != true else { return }
+        if isMostlyVisible == false {
+            current.pause()
+            return
+        }
+        // Cancelled when visibility changes or the view leaves the screen.
         do {
             try await Task.sleep(for: autoplayDelay)
         } catch {
             return
         }
-        guard player === newPlayer else { return }
-        newPlayer.play()
+        guard player === current, isMostlyVisible != false else { return }
+        current.play()
         // Drop the poster only once playback has visibly moved on.
-        while !Task.isCancelled, player === newPlayer {
-            if newPlayer.timeControlStatus == .playing,
-               newPlayer.currentTime().seconds > SMVPlayerLoop.posterHideTime {
+        while !Task.isCancelled, !hasStartedPlaying, player === current {
+            if current.timeControlStatus == .playing,
+               current.currentTime().seconds > SMVPlayerLoop.posterHideTime {
                 hasStartedPlaying = true
                 return
             }
             try? await Task.sleep(for: .milliseconds(100))
         }
+    }
+
+    private func setupPlayer() {
+        guard let url = URL(string: videoURL), player == nil else { return }
+        let (newPlayer, item) = SMVPlayerLoop.makePlayer(url: url, preferredPeakBitRate: 2_000_000)
+        newPlayer.isMuted = muteOnPlay
+        player = newPlayer
+        looping = SMVPlayerLoop.loop(item, on: newPlayer)
     }
 
     private func cleanupPlayer() {

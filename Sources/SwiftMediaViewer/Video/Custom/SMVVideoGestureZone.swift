@@ -35,8 +35,7 @@ struct SMVVideoGestureZone: View {
             // Recognised alongside the taps above (see its coordinator).
             .gesture(
                 SMVHoldGesture(minimumDuration: Self.holdDuration) {
-                    guard zone.isEdge else { return }
-                    interaction.beginHold(playback: playback)
+                    interaction.beginHold(in: zone, playback: playback)
                 } onEnded: {
                     interaction.endHold(playback: playback)
                 }

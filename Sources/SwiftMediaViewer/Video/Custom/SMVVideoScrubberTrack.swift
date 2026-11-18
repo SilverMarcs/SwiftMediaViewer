@@ -14,11 +14,11 @@ struct SMVVideoScrubberTrack: View {
 
     var body: some View {
         Capsule()
-            .fill(.white.opacity(0.3))
+            .fill(.white.opacity(0.2))
             .overlay {
                 // Clip a full-width fill so its leading end stays rounded.
                 Capsule()
-                    .fill(.white)
+                    .fill(.white.opacity(0.75))
                     .mask {
                         Rectangle()
                             .scaleEffect(x: progress, anchor: .leading)

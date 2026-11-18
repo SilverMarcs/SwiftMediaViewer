@@ -50,7 +50,9 @@ struct SMVVideoPage<Overlay: View>: View {
                 if scrubber != .none {
                     if let playback {
                         SMVVideoScrubber(playback: playback,
-                                         isLineVisible: scrubber == .always || isShowingControls)
+                                         isLineVisible: scrubber == .always || isShowingControls
+                                            // Briefly for skips, and only while a 2× hold lasts.
+                                            || playback.isFlashingProgress || playback.isFastForwarding)
                     } else {
                         Color.clear
                             .frame(height: SMVVideoScrubber.hitAreaHeight)

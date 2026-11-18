@@ -8,7 +8,7 @@
 /// whether the controls appear or go away.
 struct SMVVideoPlaybackActivity: Equatable {
     enum Kind: Equatable {
-        /// Paused, skipped, or started or ended a 2× hold: the controls show.
+        /// Paused: the controls show.
         case adjusted
         /// Resumed after a pause: the controls go away at once.
         case resumed

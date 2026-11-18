@@ -49,6 +49,8 @@ struct SMVVideoScrubber: View {
             .highPriorityGesture(scrubGesture)
         }
         .animation(.snappy(duration: 0.2), value: playback.isScrubbing)
+        // Fades in and out the same way however the line was brought up.
+        .animation(.snappy(duration: 0.2), value: isLineVisible)
         .sensoryFeedback(.impact(weight: .light), trigger: scrubStartCount)
         .onChange(of: isDragging) { _, dragging in
             // A cancelled drag never reaches `onEnded`, so finish the scrub here.
