@@ -168,7 +168,7 @@ public struct SMVVideo: View {
 
     private func setupPlayer() {
         guard let url = URL(string: videoURL), player == nil else { return }
-        let (newPlayer, item) = SMVPlayerLoop.makePlayer(url: url, preferredPeakBitRate: 2_000_000)
+        let (newPlayer, item) = SMVPlayerLoop.makePlayer(url: url)
         newPlayer.isMuted = muteOnPlay
         player = newPlayer
         looping = SMVPlayerLoop.loop(item, on: newPlayer)

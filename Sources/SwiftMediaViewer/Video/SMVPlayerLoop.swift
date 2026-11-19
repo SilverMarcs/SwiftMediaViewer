@@ -13,10 +13,12 @@ enum SMVPlayerLoop {
     static let posterHideTime: Double = 0.25
 
     /// A player for `url` that stays on its item at the end, ready to rewind.
+    ///
+    /// No bitrate or resolution limit is set, so an adaptive (HLS) stream
+    /// climbs to the best variant the network allows.
     @MainActor
-    static func makePlayer(url: URL, preferredPeakBitRate: Double = 0) -> (AVPlayer, AVPlayerItem) {
+    static func makePlayer(url: URL) -> (AVPlayer, AVPlayerItem) {
         let item = AVPlayerItem(url: url)
-        item.preferredPeakBitRate = preferredPeakBitRate
         let player = AVPlayer(playerItem: item)
         player.actionAtItemEnd = .none
         return (player, item)
