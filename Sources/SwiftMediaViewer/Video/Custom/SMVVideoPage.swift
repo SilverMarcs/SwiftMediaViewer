@@ -20,15 +20,11 @@ struct SMVVideoPage<Overlay: View>: View {
     let isShowingControls: Bool
     let scrubber: SMVVideoScrubberMode
     let toggleControls: () -> Void
-    /// Reports whether this page is zoomed in, which stops the feed paging.
-    let onZoomChange: (Bool) -> Void
     @ViewBuilder let overlay: () -> Overlay
 
     @State private var interaction = SMVVideoInteraction()
     /// Set once this page's video has really played, after which the thumbnail goes.
     @State private var hasStartedPlaying = false
-    @State private var zoom = SMVVideoZoom()
-    @State private var pageSize: CGSize = .zero
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -36,17 +32,12 @@ struct SMVVideoPage<Overlay: View>: View {
 
             // Behind the video until it has really played, as in the timeline: the
             // player layer is clear wherever it has no frame, so loading shows this.
-            // Only the picture zooms; the gestures, overlay and scrubber stay put.
-            ZStack {
-                if !hasStartedPlaying {
-                    SMVVideoThumbnail(item: item)
-                }
-
-                SMVPlayerSurfaceView(player: playback?.player) { _ in }
-                    .accessibilityHidden(true)
+            if !hasStartedPlaying {
+                SMVVideoThumbnail(item: item)
             }
-            .scaleEffect(zoom.scale)
-            .offset(zoom.offset)
+
+            SMVPlayerSurfaceView(player: playback?.player) { _ in }
+                .accessibilityHidden(true)
 
             SMVVideoGestureLayer(item: item, interaction: interaction, playback: playback,
                                  toggleControls: toggleControls)
@@ -74,38 +65,6 @@ struct SMVVideoPage<Overlay: View>: View {
             .animation(.easeOut(duration: 0.25), value: isShowingControls)
         }
         .clipped()
-        .onGeometryChange(for: CGSize.self) { proxy in
-            proxy.size
-        } action: { size in
-            pageSize = size
-        }
-        // Pinch out to zoom, pinch in to zoom back out; at 1× an inward pinch
-        // is left to the zoom transition, which closes the viewer.
-        .gesture(
-            SMVPinchGesture { [zoom] in
-                zoom.isZoomed
-            } onBegan: { focus in
-                zoom.beginPinch(at: centered(focus))
-            } onChanged: { scale, focus in
-                zoom.updatePinch(scale: scale, focus: centered(focus))
-            } onEnded: {
-                zoom.endPinch(pageSize: pageSize)
-            }
-        )
-        .gesture(
-            SMVZoomPanGesture { [zoom] in
-                zoom.isZoomed
-            } onBegan: {
-                zoom.beginPan()
-            } onChanged: { translation in
-                zoom.updatePan(translation: translation)
-            } onEnded: {
-                zoom.endPan(pageSize: pageSize)
-            }
-        )
-        .onChange(of: zoom.isZoomed) { _, zoomed in
-            onZoomChange(zoomed)
-        }
         .onChange(of: playback?.currentTime ?? 0) { _, time in
             if !hasStartedPlaying, playback?.isPlaying == true, time > SMVPlayerLoop.posterHideTime {
                 hasStartedPlaying = true
@@ -120,13 +79,7 @@ struct SMVVideoPage<Overlay: View>: View {
         }
         .onDisappear {
             interaction.reset(playback: playback)
-            zoom.reset()
         }
-    }
-
-    /// A point in the page's own space, measured from its center instead.
-    private func centered(_ point: CGPoint) -> CGPoint {
-        CGPoint(x: point.x - pageSize.width / 2, y: point.y - pageSize.height / 2)
     }
 }
 #endif

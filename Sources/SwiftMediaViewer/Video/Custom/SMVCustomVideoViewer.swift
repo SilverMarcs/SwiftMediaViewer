@@ -34,8 +34,7 @@ struct SMVCustomVideoViewer<Overlay: View>: View {
                             safeArea: isFullScreen ? safeArea : EdgeInsets(),
                             isShowingControls: model.isShowingControls,
                             scrubber: scrubber,
-                            toggleControls: model.toggleControls,
-                            onZoomChange: { zoomed in model.pageDidChangeZoom(item.id, isZoomed: zoomed) }
+                            toggleControls: model.toggleControls
                         ) {
                             overlay(SMVVideoPageContext(
                                 item: item,
@@ -55,8 +54,7 @@ struct SMVCustomVideoViewer<Overlay: View>: View {
             // zoom transition's interactive close.
             .scrollBounceBehavior(.basedOnSize)
             // The scrubber's drag owns the gesture while it's moving.
-            // A zoomed page pans instead of paging.
-            .scrollDisabled(model.isScrubbing || model.isZoomed)
+            .scrollDisabled(model.isScrubbing)
             // Vertical only: on iPad the sidebar's leading inset keeps videos beside it.
             .ignoresSafeArea(.container, edges: isFullScreen ? .vertical : [])
         }

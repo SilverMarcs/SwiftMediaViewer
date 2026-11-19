@@ -97,22 +97,6 @@ final class SMVVideoViewerModel {
         currentPlayback?.isScrubbing ?? false
     }
 
-    /// The page that's pinched in, if any.
-    private(set) var zoomedPageID: SMVVideoItem.ID?
-
-    /// Whether the current page is zoomed in, which stops the feed paging.
-    var isZoomed: Bool {
-        zoomedPageID != nil && zoomedPageID == currentID
-    }
-
-    func pageDidChangeZoom(_ id: SMVVideoItem.ID, isZoomed: Bool) {
-        if isZoomed {
-            zoomedPageID = id
-        } else if zoomedPageID == id {
-            zoomedPageID = nil
-        }
-    }
-
     // MARK: Events
 
     /// Shows or hides the scrubber and the buttons.
